@@ -194,7 +194,13 @@ def agregar_pais(paises, pais):
       - (False, "<aviso>") si ya existe un país con ese nombre.
       - (True, "<confirmación>") si lo agregó a la lista.
     """
-    raise NotImplementedError  # TODO Cris
+    pais_limpio, errores = validar_pais(pais)
+    if errores:
+        return False, " ".join(errores)
+    if indice_de_pais(paises, pais_limpio["nombre"]) != -1:
+        return False, f"Ya existe un país con el nombre '{pais_limpio['nombre']}'."
+    paises.append(pais_limpio)
+    return True, f"País '{pais_limpio['nombre']}' agregado correctamente."
 
 
 def actualizar_pais(paises, nombre, cambios):
@@ -208,7 +214,21 @@ def actualizar_pais(paises, nombre, cambios):
         país queda como estaba.
       - (True, ...) si lo actualizó.
     """
-    raise NotImplementedError  # TODO Cris
+    indice = indice_de_pais(paises, nombre)
+    if indice == -1:
+        return False, f"No se encontró el país '{limpiar_texto(nombre)}'."
+    if not cambios:
+        return False, "Ingresá al menos un cambio de población o superficie."
+    if any(campo not in CAMPOS_NUMERICOS for campo in cambios):
+        return False, "Solo se pueden actualizar población y superficie."
+
+    actualizado = paises[indice].copy()
+    actualizado.update(cambios)
+    pais_limpio, errores = validar_pais(actualizado)
+    if errores:
+        return False, " ".join(errores)
+    paises[indice] = pais_limpio
+    return True, f"País '{pais_limpio['nombre']}' actualizado correctamente."
 
 
 def guardar_paises(paises, ruta=RUTA_CSV):
