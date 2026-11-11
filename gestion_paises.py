@@ -204,8 +204,10 @@ def agregar_pais(paises, pais):
     pais_limpio, errores = validar_pais(pais)
     if errores:
         return False, " ".join(errores)
-    if indice_de_pais(paises, pais_limpio["nombre"]) != -1:
-        return False, f"Ya existe un país con el nombre '{pais_limpio['nombre']}'."
+    indice = indice_de_pais(paises, pais_limpio["nombre"])
+    if indice != -1:
+        # Mostrar el nombre como está guardado, no como lo escribió el usuario
+        return False, f"Ya existe un país con el nombre '{paises[indice]['nombre']}'."
     paises.append(pais_limpio)
     return True, f"País '{pais_limpio['nombre']}' agregado correctamente."
 

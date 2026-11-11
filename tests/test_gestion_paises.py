@@ -194,9 +194,10 @@ class TestAgregarPais(unittest.TestCase):
 
     def test_rechaza_repetido_sin_importar_mayusculas(self):
         paises = [pais_ejemplo()]
-        exito, _ = agregar_pais(paises, pais_ejemplo(nombre="  ARGENTINA "))
+        exito, mensaje = agregar_pais(paises, pais_ejemplo(nombre="  ARGENTINA "))
         self.assertFalse(exito)
         self.assertEqual(len(paises), 1)
+        self.assertIn("'Argentina'", mensaje)  # el nombre guardado, no "ARGENTINA"
 
 
 class TestActualizarPais(unittest.TestCase):
