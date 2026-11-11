@@ -47,7 +47,16 @@ class TestMenuCSV(unittest.TestCase):
         salida = self.ejecutar("2", paises, [" ARGENTINA ", "46000000", ""])
         self.assertEqual(paises[0], pais_ejemplo(poblacion=46000000, iso3="ARG"))
         self.assertEqual(cargar_paises(self.ruta), paises)
+        self.assertIn("población 45376763, superficie 2780400", salida)  # datos actuales
         self.assertIn("actualizado correctamente", salida)
+
+    def test_actualizar_pais_inexistente_no_pide_datos(self):
+        paises = [pais_ejemplo()]
+        # Solo se da el nombre: si el menú pidiera población o superficie, input() fallaría
+        salida = self.ejecutar("2", paises, [" Narnia "])
+        self.assertIn("No se encontró el país 'Narnia'", salida)
+        self.guardado.assert_not_called()
+        self.assertEqual(paises, [pais_ejemplo()])
 
     def test_actualizar_sin_cambios_evitar_guardado(self):
         paises = [pais_ejemplo()]

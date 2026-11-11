@@ -1,5 +1,5 @@
 """Menú principal compartido. Cada integrante integra su opción mediante PR."""
-from gestion_paises import cargar_paises, agregar_pais, actualizar_pais, guardar_paises
+from gestion_paises import cargar_paises, agregar_pais, actualizar_pais, guardar_paises, indice_de_pais
 from consultas import buscar_pais, filtrar_continente, filtrar_rango
 from operaciones import eliminar_pais, limpiar_paises, ordenar_paises
 from estadisticas import resumen_estadistico, calcular_densidad
@@ -43,6 +43,14 @@ def ejecutar_opcion(opcion, paises):
         exito, mensaje = agregar_pais(paises_actualizados, pais)
     elif opcion == "2":
         nombre = input("Nombre del país a modificar: ")
+        # Buscar el país antes de pedir datos: si no existe, no tiene sentido seguir
+        indice = indice_de_pais(paises, nombre)
+        if indice == -1:
+            print(f"No se encontró el país '{nombre.strip()}'.")
+            return
+        actual = paises[indice]
+        print(f"Datos actuales de {actual['nombre']}: población {actual['poblacion']}, "
+              f"superficie {actual['superficie']} km².")
         cambios = {}
         poblacion = input("Nueva población (Enter para conservar la actual): ").strip()
         superficie = input("Nueva superficie en km² (Enter para conservar la actual): ").strip()
