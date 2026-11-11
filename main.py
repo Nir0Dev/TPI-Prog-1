@@ -79,6 +79,20 @@ def ejecutar_opcion(opcion, paises):
             exito, mensaje = True, "Todos los registros han sido eliminados de la lista."
         else:
             exito, mensaje = False, "Limpieza cancelada."
+    elif opcion == "7":
+        parametro = input("¿Desea ordenar por nombre, población o superficie?")
+        lista_ordenada, campo = ordenar_paises(paises_actualizados, parametro)
+        print(lista_ordenada)
+
+        return
+        #En caso de querer actualizar el csv con la lista ordenada utilizar el codigo de abajo y eliminar el return de la linea anterior
+        """ paises_actualizados = lista_ordenada
+
+        if lista_ordenada == None:
+            exito, mensaje = False, "Fallo al ordenar la lista."
+        else:
+            exito, mensaje = True, f"Se ha ordenado la lista en base a {campo}" """
+        
     else:
         raise NotImplementedError(f"Opción {opcion} pendiente de integración")
 
