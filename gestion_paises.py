@@ -148,7 +148,7 @@ def cargar_paises(ruta=RUTA_CSV):
     - Si faltan columnas obligatorias, lanza ValueError (main avisa y termina,
       para no guardar encima de un archivo que no entendemos).
     - Las filas con errores o repetidas se descartan, avisando en pantalla el
-      número de línea y el motivo.
+      número de línea y el motivo, y que al guardar se van a quitar del CSV.
     """
     ruta = Path(ruta)
     crear_plantilla(ruta)
@@ -168,19 +168,26 @@ def cargar_paises(ruta=RUTA_CSV):
         )
 
     paises = []
+    descartadas = 0
     for fila in lector:
-        linea = lector.line_num
-        if None in fila:  # DictReader guarda en la clave None los valores sobrantes
-            print(f"Aviso: línea {linea} descartada: tiene más valores que columnas.")
-            continue
+        motivo = ""
         pais, errores = validar_pais(fila)
-        if errores:
-            print(f"Aviso: línea {linea} descartada: {' '.join(errores)}")
-            continue
-        if indice_de_pais(paises, pais["nombre"]) != -1:
-            print(f"Aviso: línea {linea} descartada: '{pais['nombre']}' está repetido.")
-            continue
-        paises.append(pais)
+        if None in fila:  # DictReader guarda en la clave None los valores sobrantes
+            motivo = "tiene más valores que columnas."
+        elif errores:
+            motivo = " ".join(errores)
+        elif indice_de_pais(paises, pais["nombre"]) != -1:
+            motivo = f"'{pais['nombre']}' está repetido."
+
+        if motivo:
+            descartadas += 1
+            print(f"Aviso: línea {lector.line_num} descartada: {motivo}")
+        else:
+            paises.append(pais)
+
+    if descartadas > 0:
+        print(f"Atención: {descartadas} fila(s) no se cargaron. Si guardás cambios, se van a "
+              "quitar del CSV; si las necesitás, corregilas en el archivo antes.")
     return paises
 
 

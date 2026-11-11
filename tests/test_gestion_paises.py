@@ -128,6 +128,8 @@ class TestCargarPaises(ConCarpetaTemporal):
         self.assertEqual([p["nombre"] for p in paises], ["Argentina", "Alemania"])
         self.assertEqual(salida.count("descartada"), 5)
         self.assertIn("línea 6", salida)  # la fila de ARGENTINA repetida
+        self.assertIn("5 fila(s) no se cargaron", salida)
+        self.assertIn("quitar del CSV", salida)
 
     def test_faltan_columnas_lanza_error(self):
         self.escribir("nombre,poblacion,continente\nArgentina,45376763,América\n")
