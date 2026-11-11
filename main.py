@@ -59,6 +59,26 @@ def ejecutar_opcion(opcion, paises):
         if superficie:
             cambios["superficie"] = superficie
         exito, mensaje = actualizar_pais(paises_actualizados, nombre, cambios)
+    elif opcion == "3":
+        lista_actualizada = eliminar_pais(paises_actualizados, input("Nombre del país a eliminar: "))
+        if lista_actualizada is None:
+            return
+        print("¿Estás seguro de eliminar el país? (S/N): ", end="")
+        confirmacion = input().strip().lower()
+        if confirmacion == "s":
+            paises_actualizados = lista_actualizada
+            exito, mensaje = True, "País eliminado correctamente."
+        else:
+            exito, mensaje = False, "Eliminación cancelada."
+    elif opcion == "4":
+        lista_vacia = limpiar_paises(paises_actualizados)
+        print("¿Estás seguro de limpiar todos los registros? (S/N): ", end="")
+        confirmacion = input().strip().lower()
+        if confirmacion == "s":
+            paises_actualizados = lista_vacia
+            exito, mensaje = True, "Todos los registros han sido eliminados de la lista."
+        else:
+            exito, mensaje = False, "Limpieza cancelada."
     else:
         raise NotImplementedError(f"Opción {opcion} pendiente de integración")
 
