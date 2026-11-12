@@ -93,6 +93,46 @@ def ejecutar_opcion(opcion, paises):
                 mostrar_estadisticas_pais(paises[indice])
             else:
                 print("Opcion invalida. Elija 1, 2 o 3")
+
+    elif opcion == "3":
+        lista_actualizada = eliminar_pais(paises_actualizados, input("Nombre del país a eliminar: "))
+        if lista_actualizada is None:
+            return
+        print("¿Estás seguro de eliminar el país? (S/N): ", end="")
+        confirmacion = input().strip().lower()
+        if confirmacion == "s":
+            paises_actualizados = lista_actualizada
+            exito, mensaje = True, "País eliminado correctamente."
+        else:
+            exito, mensaje = False, "Eliminación cancelada."
+    elif opcion == "4":
+        lista_vacia = limpiar_paises(paises_actualizados)
+        print("¿Estás seguro de limpiar todos los registros? (S/N): ", end="")
+        confirmacion = input().strip().lower()
+        if confirmacion == "s":
+            paises_actualizados = lista_vacia
+            exito, mensaje = True, "Todos los registros han sido eliminados de la lista."
+        else:
+            exito, mensaje = False, "Limpieza cancelada."
+    elif opcion == "7":
+        parametro = input("¿Desea ordenar por nombre, población o superficie?")
+        resultado = ordenar_paises(paises_actualizados, parametro)
+        
+        if resultado is None:
+            return
+        
+        lista_ordenada, campo = resultado
+        print(lista_ordenada)
+
+        return
+        #En caso de querer actualizar el csv con la lista ordenada utilizar el codigo de abajo y eliminar el return de la linea anterior
+        """ paises_actualizados = lista_ordenada
+
+        if lista_ordenada == None:
+            exito, mensaje = False, "Fallo al ordenar la lista."
+        else:
+            exito, mensaje = True, f"Se ha ordenado la lista en base a {campo}" """
+  
     else:
         raise NotImplementedError(f"Opción {opcion} pendiente de integración")
 
