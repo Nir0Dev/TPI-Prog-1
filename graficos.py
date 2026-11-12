@@ -26,74 +26,143 @@ def mostrar_estadisticas_pais(pais, historia=None):
     if datos is None:
         return
 
-    texto = (
-        f"País: {datos['nombre']}\n"
-        f"Población: {formatear_numero(datos['poblacion'])} habitantes\n"
-        f"Superficie: {formatear_numero(datos['superficie'])} km²\n"
-        f"Continente: {datos['continente']}\n"
-        f"Densidad: {formatear_numero(datos['densidad'])} habitantes por km²"
-    )
+    try:
+        texto = (
+            f"País: {datos['nombre']}\n"
+            f"Población: {formatear_numero(datos['poblacion'])} habitantes\n"
+            f"Superficie: {formatear_numero(datos['superficie'])} km²\n"
+            f"Continente: {datos['continente']}\n"
+            f"Densidad: {formatear_numero(datos['densidad'])} habitantes por km²"
+        )
 
-    adicionales = 0
+        adicionales = 0
 
-    for campo, valor in datos.items():
-        if campo in ("nombre", "poblacion", "superficie",
-                     "continente", "densidad", "anio"):
-            continue
+        for campo, valor in datos.items():
+            if campo in (
+                "nombre", "poblacion", "superficie",
+                "continente", "densidad", "anio"
+            ):
+                continue
 
-        if valor is None or str(valor).strip() == "":
-            continue
+            if valor is None or str(valor).strip() == "":
+                continue
 
-        etiqueta = campo.replace("_", " ").capitalize()
-        texto += f"\n{etiqueta}: {valor}"
-        adicionales += 1
+            etiqueta = str(campo).replace("_", " ").capitalize()
+            texto += f"\n{etiqueta}: {valor}"
+            adicionales += 1
 
-    if adicionales == 0:
-        texto += "\n\nNo hay datos adicionales guardados para este país."
+        if adicionales == 0:
+            texto += "\n\nNo hay datos adicionales guardados para este país."
 
-    figura = plt.figure(figsize=(12, 10))
+    except KeyError:
+        print("Error: faltan datos obligatorios para mostrar el país.")
+        return
 
-    eje = figura.add_axes([0.12, 0.65, 0.80, 0.24])
-    eje_texto = figura.add_axes([0.06, 0.14, 0.90, 0.42])
-    eje_texto.axis("off")
-    eje_texto.text(0, 1, texto, va="top", fontsize=9)
+    except TypeError:
+        print("Error: los datos del país no permiten preparar la información.")
+        return
 
-    boton_poblacion = Button(
-        figura.add_axes([0.06, 0.04, 0.20, 0.05]),
-        "Población"
-    )
-    boton_superficie = Button(
-        figura.add_axes([0.29, 0.04, 0.20, 0.05]),
-        "Superficie"
-    )
-    boton_densidad = Button(
-        figura.add_axes([0.52, 0.04, 0.20, 0.05]),
-        "Densidad"
-    )
-    boton_volver = crear_boton_volver(
-        figura, [0.75, 0.04, 0.20, 0.05]
-    )
+    figura = None
+
+    try:
+        figura = plt.figure(figsize=(12, 10))
+
+        eje = figura.add_axes([0.12, 0.65, 0.80, 0.24])
+        eje_texto = figura.add_axes([0.06, 0.14, 0.90, 0.42])
+        eje_texto.axis("off")
+        eje_texto.text(0, 1, texto, va="top", fontsize=9)
+
+        boton_poblacion = Button(
+            figura.add_axes([0.06, 0.04, 0.20, 0.05]),
+            "Población"
+        )
+
+        boton_superficie = Button(
+            figura.add_axes([0.29, 0.04, 0.20, 0.05]),
+            "Superficie"
+        )
+
+        boton_densidad = Button(
+            figura.add_axes([0.52, 0.04, 0.20, 0.05]),
+            "Densidad"
+        )
+
+        boton_volver = crear_boton_volver(
+            figura, [0.75, 0.04, 0.20, 0.05]
+        )
+
+    except TypeError:
+        print("Error: hay un tipo incompatible al crear la ventana del país.")
+        if figura is not None:
+            plt.close(figura)
+        return
+
+    except ValueError:
+        print("Error: no se pudo crear la ventana del país o sus controles.")
+        if figura is not None:
+            plt.close(figura)
+        return
+
+    except OverflowError:
+        print("Error: un valor es demasiado grande para crear el gráfico del país.")
+        if figura is not None:
+            plt.close(figura)
+        return
 
     def dibujar(campo, titulo, unidad):
-        eje.clear()
+        try:
+            valor = datos[campo]
+            nombre = datos["nombre"]
 
-        valor = datos[campo]
-        barras = eje.bar([datos["nombre"]], [valor], width=0.3)
+            if valor < 0:
+                print("Error: no se puede graficar un valor negativo.")
+                return
 
-        eje.set_xlim(-1, 1)
-        eje.set_ylim(0, max(valor * 1.20, 1))
-        eje.set_title(titulo)
-        eje.set_ylabel(unidad)
-        eje.yaxis.set_major_formatter(
-            FuncFormatter(formatear_numero)
-        )
-        eje.bar_label(
-            barras,
-            labels=[formatear_numero(valor)],
-            padding=3
-        )
+            if valor != valor or valor == float("inf"):
+                print("Error: el valor debe ser un número finito.")
+                return
 
-        figura.canvas.draw_idle()
+            limite = max(valor * 1.20, 1)
+
+            if limite == float("inf"):
+                print("Error: el valor es demasiado grande para la escala del gráfico.")
+                return
+
+            eje.clear()
+
+            barras = eje.bar([nombre], [valor], width=0.3)
+
+            eje.set_xlim(-1, 1)
+            eje.set_ylim(0, limite)
+            eje.set_title(titulo)
+            eje.set_ylabel(unidad)
+
+            eje.yaxis.set_major_formatter(
+                FuncFormatter(formatear_numero)
+            )
+
+            eje.bar_label(
+                barras,
+                labels=[formatear_numero(valor)],
+                padding=3
+            )
+
+            figura.canvas.draw_idle()
+
+        except KeyError:
+            print("Error: falta el nombre o el dato solicitado del país.")
+            return
+
+        except TypeError:
+            print("Error: el dato del país no tiene un tipo válido para graficar.")
+            return
+
+        except ValueError:
+            print("Error: el valor recibido no permite dibujar el gráfico.")
+            return
+        except OverflowError:
+            print("Error: el valor es demasiado grande para dibujar el gráfico.")
+            return
 
     def ver_poblacion(evento):
         dibujar("poblacion", "Población", "Habitantes")
@@ -113,55 +182,129 @@ def mostrar_estadisticas_pais(pais, historia=None):
     plt.show(block=True)
 
 def mostrar_estadisticas_generales(paises):
-    """Una figura de comparación + valores de estadísticas debajo."""
+    """Mostrar el resumen general y manejar errores al graficar."""
     resumen = resumen_estadistico(paises)
 
     if resumen is None:
         return
-    
-    continentes = []
-    cantidades = []
 
-    for continente, cantidad in resumen["paises_por_continente"].items():
-        continentes.append(continente)
-        cantidades.append(cantidad)
+    figura = None
 
-    mayor = resumen["mayor_poblacion"]
-    menor = resumen["menor_poblacion"]
+    try:
+        continentes = []
+        cantidades = []
 
-    texto = (
-        f"Mayor población: {mayor['nombre']} "
-        f"({formatear_numero(mayor['poblacion'])} habitantes)\n"
-        f"Menor población: {menor['nombre']} "
-        f"({formatear_numero(menor['poblacion'])} habitantes)\n"
-        f"Promedio de población: "
-        f"{formatear_numero(resumen['promedio_poblacion'])} habitantes\n"
-        f"Promedio de superficie: "
-        f"{formatear_numero(resumen['promedio_superficie'])} km²"
-    )
+        for continente, cantidad in resumen["paises_por_continente"].items():
+            continentes.append(continente)
+            cantidades.append(cantidad)
 
-    figura = plt.figure(figsize=(10, 8))
-    plt.subplot(2,1,1)
-    plt.bar(continentes, cantidades)
-    plt.title("Cantidad de paises cargados por continente")
-    plt.xlabel("Continente")
-    plt.ylabel("Cantindad de paises")
-    plt.gca().yaxis.set_major_formatter(FuncFormatter(formatear_numero))
+        mayor = resumen["mayor_poblacion"]
+        menor = resumen["menor_poblacion"]
 
-    plt.subplot(2,1,2)
-    plt.axis("off")
-    plt.text(0, 0.9, texto, va="top", fontsize=11)
+        texto = (
+            f"Mayor población: {mayor['nombre']} "
+            f"({formatear_numero(mayor['poblacion'])} habitantes)\n"
+            f"Menor población: {menor['nombre']} "
+            f"({formatear_numero(menor['poblacion'])} habitantes)\n"
+            f"Promedio de población: "
+            f"{formatear_numero(resumen['promedio_poblacion'])} habitantes\n"
+            f"Promedio de superficie: "
+            f"{formatear_numero(resumen['promedio_superficie'])} km²"
+        )
 
-    plt.tight_layout(rect=(0, 0.12, 1, 1))
-    boton_volver = crear_boton_volver(
-        figura, [0.40, 0.03, 0.20, 0.05]
-    )
-    plt.show(block=True)
+        figura = plt.figure(figsize=(10, 8))
+
+        plt.subplot(2, 1, 1)
+        plt.bar(continentes, cantidades)
+        plt.title("Cantidad de países cargados por continente")
+        plt.xlabel("Continente")
+        plt.ylabel("Cantidad de países")
+        plt.gca().yaxis.set_major_formatter(
+            FuncFormatter(formatear_numero)
+        )
+
+        plt.subplot(2, 1, 2)
+        plt.axis("off")
+        plt.text(0, 0.9, texto, va="top", fontsize=11)
+
+        plt.tight_layout(rect=(0, 0.12, 1, 1))
+
+        boton_volver = crear_boton_volver(
+            figura, [0.40, 0.03, 0.20, 0.05]
+        )
+
+        plt.show(block=True)
+
+    except KeyError:
+        print("Error: faltan datos obligatorios para mostrar el resumen.")
+        if figura is not None:
+            plt.close(figura)
+        return
+
+    except TypeError:
+        print("Error: los datos del resumen tienen tipos incompatibles.")
+        if figura is not None:
+            plt.close(figura)
+        return
+
+    except ValueError:
+        print("Error: los valores del resumen no permiten crear el gráfico.")
+        if figura is not None:
+            plt.close(figura)
+        return
+
+    except OverflowError:
+        print("Error: un valor del resumen es demasiado grande para graficar.")
+        if figura is not None:
+            plt.close(figura)
+        return
 
 def mostrar_grafico_barras(etiquetas, valores, titulo, unidad, texto, promedio=None):
     """Mostrar hasta 15 países por página con botones de navegación."""
-    if not etiquetas or len(etiquetas) != len(valores):
-        print("No hay datos válidos para mostrar el gráfico.")
+    try:
+        if not etiquetas or len(etiquetas) != len(valores):
+            print("Error: faltan datos o las cantidades de nombres y valores no coinciden.")
+            return
+
+        for valor in valores:
+            if valor < 0:
+                print("Error: no se pueden graficar valores negativos.")
+                return
+
+            if valor != valor or valor == float("inf"):
+                print("Error: todos los valores deben ser números finitos.")
+                return
+
+        limite = max(valores)
+
+        if promedio is not None:
+            if promedio < 0:
+                print("Error: el promedio no puede ser negativo.")
+                return
+
+            if promedio != promedio or promedio == float("inf"):
+                print("Error: el promedio debe ser un número finito.")
+                return
+
+            limite = max(limite, promedio)
+
+        if limite <= 0:
+            limite = 1
+
+        if limite * 1.20 == float("inf"):
+            print("Error: los valores son demasiado grandes para la escala del gráfico.")
+            return
+
+    except TypeError:
+        print("Error: los nombres, valores o el promedio tienen un tipo incompatible.")
+        return
+
+    except ValueError:
+        print("Error: no se pudo determinar la escala del gráfico.")
+        return
+
+    except OverflowError:
+        print("Error: los valores son demasiado grandes para preparar el gráfico.")
         return
 
     por_pagina = 15
@@ -169,108 +312,146 @@ def mostrar_grafico_barras(etiquetas, valores, titulo, unidad, texto, promedio=N
     paginas = (cantidad + por_pagina - 1) // por_pagina
     estado = {"pagina": 0, "descendente": True}
 
-    figura = plt.figure(figsize=(12, 9))
+    figura = None
 
-    eje = figura.add_axes([0.36, 0.40, 0.60, 0.50])
-    eje_texto = figura.add_axes([0.06, 0.15, 0.90, 0.18])
-    eje_texto.axis("off")
-    eje_texto.text(0, 1, texto, va="top", fontsize=10)
+    try:
+        figura = plt.figure(figsize=(12, 9))
 
-    boton_anterior = Button(
-        figura.add_axes([0.035, 0.04, 0.17, 0.05]),
-        "Anterior"
-    )
-    boton_siguiente = Button(
-        figura.add_axes([0.22, 0.04, 0.17, 0.05]),
-        "Siguiente"
-    )
-    boton_descendente = Button(
-        figura.add_axes([0.405, 0.04, 0.17, 0.05]),
-        "Mayor a menor"
-    )
-    boton_ascendente = Button(
-        figura.add_axes([0.59, 0.04, 0.17, 0.05]),
-        "Menor a mayor"
-    )
-    boton_volver = Button(
-        figura.add_axes([0.775, 0.04, 0.17, 0.05]),
-        "Volver"
-    )
+        eje = figura.add_axes([0.36, 0.40, 0.60, 0.50])
+        eje_texto = figura.add_axes([0.06, 0.15, 0.90, 0.18])
+        eje_texto.axis("off")
+        eje_texto.text(0, 1, texto, va="top", fontsize=10)
 
-    limite = max(valores)
+        boton_anterior = Button(
+            figura.add_axes([0.035, 0.04, 0.17, 0.05]),
+            "Anterior"
+        )
 
-    if promedio is not None:
-        limite = max(limite, promedio)
+        boton_siguiente = Button(
+            figura.add_axes([0.22, 0.04, 0.17, 0.05]),
+            "Siguiente"
+        )
 
-    if limite <= 0:
-        limite = 1
+        boton_descendente = Button(
+            figura.add_axes([0.405, 0.04, 0.17, 0.05]),
+            "Mayor a menor"
+        )
+
+        boton_ascendente = Button(
+            figura.add_axes([0.59, 0.04, 0.17, 0.05]),
+            "Menor a mayor"
+        )
+
+        boton_volver = Button(
+            figura.add_axes([0.775, 0.04, 0.17, 0.05]),
+            "Volver"
+        )
+
+    except TypeError:
+        print("Error: hay un tipo incompatible al crear la ventana del gráfico.")
+        if figura is not None:
+            plt.close(figura)
+        return
+
+    except ValueError:
+        print("Error: no se pudo crear la ventana o sus controles.")
+        if figura is not None:
+            plt.close(figura)
+        return
+
+    except OverflowError:
+        print("Error: un valor es demasiado grande para crear el gráfico.")
+        if figura is not None:
+            plt.close(figura)
+        return
 
     def dibujar_pagina():
-        inicio = estado["pagina"] * por_pagina
-        fin = min(inicio + por_pagina, cantidad)
+        try:
+            inicio = estado["pagina"] * por_pagina
+            fin = min(inicio + por_pagina, cantidad)
 
-        indices = sorted(
-            range(cantidad),
-            key=lambda indice: valores[indice],
-            reverse=estado["descendente"]
-        )
-
-        nombres_pagina = []
-        valores_pagina = []
-
-        for indice in indices[inicio:fin]:
-            nombres_pagina.append(etiquetas[indice])
-            valores_pagina.append(valores[indice])
-
-        posiciones = range(len(nombres_pagina))
-
-        eje.clear()
-
-        barras = eje.barh(posiciones, valores_pagina)
-        eje.set_yticks(posiciones, labels=nombres_pagina)
-        eje.tick_params(axis="y", labelsize=8)
-
-        # Mantener el primer país arriba y espacio para 15 filas.
-        eje.set_ylim(por_pagina - 0.5, -0.5)
-        eje.set_xlim(0, limite * 1.20)
-
-        eje.set_xlabel(unidad)
-        eje.xaxis.set_major_formatter(
-            FuncFormatter(formatear_numero)
-        )
-
-        etiquetas_valores = []
-
-        for valor in valores_pagina:
-            etiquetas_valores.append(formatear_numero(valor))
-
-        eje.bar_label(
-            barras,
-            labels=etiquetas_valores,
-            padding=3,
-            fontsize=8
-        )
-
-        if promedio is not None:
-            eje.axvline(
-                x=promedio,
-                color="red",
-                linestyle="--",
-                label=f"Promedio general: {formatear_numero(promedio)}"
+            indices = sorted(
+                range(cantidad),
+                key=lambda indice: valores[indice],
+                reverse=estado["descendente"]
             )
-            eje.legend(loc="lower right", fontsize=9)
 
-        eje.set_title(
-            f"{titulo}\n"
-            f"Países {inicio + 1}–{fin} de {cantidad} "
-            f"| Página {estado['pagina'] + 1} de {paginas}",
-            fontsize=11
-        )
+            nombres_pagina = []
+            valores_pagina = []
 
-        boton_anterior.set_active(estado["pagina"] > 0)
-        boton_siguiente.set_active(estado["pagina"] < paginas - 1)
+            for indice in indices[inicio:fin]:
+                nombres_pagina.append(etiquetas[indice])
+                valores_pagina.append(valores[indice])
 
-        figura.canvas.draw_idle()
+            posiciones = range(len(nombres_pagina))
+
+            eje.clear()
+
+            barras = eje.barh(posiciones, valores_pagina)
+            eje.set_yticks(posiciones, labels=nombres_pagina)
+            eje.tick_params(axis="y", labelsize=8)
+
+            # Mantener el primer país arriba y espacio para 15 filas.
+            eje.set_ylim(por_pagina - 0.5, -0.5)
+            eje.set_xlim(0, limite * 1.20)
+
+            eje.set_xlabel(unidad)
+            eje.xaxis.set_major_formatter(
+                FuncFormatter(formatear_numero)
+            )
+
+            etiquetas_valores = []
+
+            for valor in valores_pagina:
+                etiquetas_valores.append(formatear_numero(valor))
+
+            eje.bar_label(
+                barras,
+                labels=etiquetas_valores,
+                padding=3,
+                fontsize=8
+            )
+
+            if promedio is not None:
+                eje.axvline(
+                    x=promedio,
+                    color="red",
+                    linestyle="--",
+                    label=f"Promedio general: {formatear_numero(promedio)}"
+                )
+                eje.legend(loc="lower right", fontsize=9)
+
+            eje.set_title(
+                f"{titulo}\n"
+                f"Países {inicio + 1}-{fin} de {cantidad} "
+                f"| Página {estado['pagina'] + 1} de {paginas}",
+                fontsize=11
+            )
+
+            boton_anterior.set_active(estado["pagina"] > 0)
+            boton_siguiente.set_active(estado["pagina"] < paginas - 1)
+
+            figura.canvas.draw_idle()
+
+        except IndexError:
+            print("Error: no se pudo acceder a los datos de esta página.")
+            return
+
+        except KeyError:
+            print("Error: falta información del estado de navegación.")
+            return
+
+        except TypeError:
+            print("Error: los datos de esta página tienen tipos incompatibles.")
+            return
+
+        except ValueError:
+            print("Error: los valores de esta página no permiten dibujar el gráfico.")
+            return
+
+        except OverflowError:
+            print("Error: un valor de esta página es demasiado grande para graficar.")
+            return
 
     def pagina_anterior(evento):
         if estado["pagina"] > 0:
@@ -306,28 +487,50 @@ def mostrar_grafico_barras(etiquetas, valores, titulo, unidad, texto, promedio=N
     plt.show(block=True)
 
 def mostrar_promedio_poblacion(paises):
-    """Comparar las poblaciones con el promedio del dataset."""
-    resumen = resumen_estadistico(paises)
+    """Comparar las poblaciones con el promedio y manejar errores."""
+    try:
+        resumen = resumen_estadistico(paises)
 
-    if resumen is None:
+        if resumen is None:
+            return
+
+        nombres, poblaciones = preparar_datos_grafico(
+            paises, "poblacion"
+        )
+
+        if not nombres:
+            return
+
+        promedio = resumen["promedio_poblacion"]
+        mayor = resumen["mayor_poblacion"]
+        menor = resumen["menor_poblacion"]
+
+        texto = (
+            f"Cantidad de países analizados: {len(paises)}\n"
+            f"Promedio de población: "
+            f"{formatear_numero(promedio)} habitantes\n"
+            f"Mayor población: {mayor['nombre']} "
+            f"({formatear_numero(mayor['poblacion'])} habitantes)\n"
+            f"Menor población: {menor['nombre']} "
+            f"({formatear_numero(menor['poblacion'])} habitantes)\n\n"
+            "La línea roja indica el promedio general."
+        )
+
+    except KeyError:
+        print("Error: faltan datos para preparar el gráfico de población.")
         return
 
-    nombres, poblaciones = preparar_datos_grafico(paises, "poblacion")
+    except TypeError:
+        print("Error: los datos de población tienen tipos incompatibles.")
+        return
 
-    promedio = resumen["promedio_poblacion"]
+    except ValueError:
+        print("Error: no se pudo preparar la información de población.")
+        return
 
-    mayor = resumen["mayor_poblacion"]
-    menor = resumen["menor_poblacion"]
-
-    texto = (
-        f"Cantidad de países analizados: {len(paises)}\n"
-        f"Promedio de población: {formatear_numero(promedio)} habitantes\n"
-        f"Mayor población: {mayor['nombre']} "
-        f"({formatear_numero(mayor['poblacion'])} habitantes)\n"
-        f"Menor población: {menor['nombre']} "
-        f"({formatear_numero(menor['poblacion'])} habitantes)\n\n"
-        "La línea roja indica el promedio general."
-    )
+    except OverflowError:
+        print("Error: un valor de población es demasiado grande.")
+        return
 
     mostrar_grafico_barras(
         nombres,
@@ -340,42 +543,76 @@ def mostrar_promedio_poblacion(paises):
 
 def formatear_numero(valor, posicion=None):
     """Mostrar millones con M y miles con m."""
-    if abs(valor) >= 1000000:
-        numero = valor / 1000000
-        sufijo = " M"
-    elif abs(valor) >= 1000:
-        numero = valor / 1000
-        sufijo = " m"
-    else:
-        numero = valor
-        sufijo = ""
+    try:
+        if abs(valor) >= 1000000:
+            numero = valor / 1000000
+            sufijo = " M"
+        elif abs(valor) >= 1000:
+            numero = valor / 1000
+            sufijo = " m"
+        else:
+            numero = valor
+            sufijo = ""
 
-    texto = f"{numero:,.2f}"
-    texto = texto.replace(",", "_")
-    texto = texto.replace(".", ",")
-    texto = texto.replace("_", ".")
-    texto = texto.rstrip("0").rstrip(",")
+        texto = f"{numero:,.2f}"
+        texto = texto.replace(",", "_")
+        texto = texto.replace(".", ",")
+        texto = texto.replace("_", ".")
+        texto = texto.rstrip("0").rstrip(",")
 
-    return texto + sufijo
+        return texto + sufijo
 
+    except TypeError:
+        print("Error: el valor recibido no permite aplicar el formato numérico.")
+        return "Sin dato"
+
+    except ValueError:
+        print("Error: el valor recibido no admite el formato solicitado.")
+        return "Sin dato"
+    except OverflowError:
+        print("Error: el valor es demasiado grande para aplicar el formato numérico.")
+        return "Sin dato"
+        
 def mostrar_promedio_superficie(paises):
-    """Comparar las superficies con el promedio del dataset."""
-    resumen = resumen_estadistico(paises)
+    """Comparar las superficies con el promedio y manejar errores."""
+    try:
+        resumen = resumen_estadistico(paises)
 
-    if resumen is None:
+        if resumen is None:
+            return
+
+        nombres, superficies = preparar_datos_grafico(
+            paises, "superficie"
+        )
+
+        if not nombres:
+            return
+
+        promedio = resumen["promedio_superficie"]
+
+        texto = (
+            f"Cantidad de países analizados: {len(paises)}\n"
+            f"Promedio de superficie: "
+            f"{formatear_numero(promedio)} km²\n\n"
+            "Cada barra representa la superficie de un país.\n"
+            "La línea roja indica el promedio de los países cargados."
+        )
+
+    except KeyError:
+        print("Error: faltan datos para preparar el gráfico de superficie.")
         return
 
-    nombres, superficies = preparar_datos_grafico(paises, "superficie")
+    except TypeError:
+        print("Error: los datos de superficie tienen tipos incompatibles.")
+        return
 
-    promedio = resumen["promedio_superficie"]
+    except ValueError:
+        print("Error: no se pudo preparar la información de superficie.")
+        return
 
-    texto = (
-        f"Cantidad de países analizados: {len(paises)}\n"
-        f"Promedio de superficie: {formatear_numero(promedio)} km²\n\n"
-        "Cada barra representa la superficie de un país.\n"
-        "La línea roja indica el promedio de los países cargados.\n"
-    
-    )
+    except OverflowError:
+        print("Error: un valor de superficie es demasiado grande.")
+        return
 
     mostrar_grafico_barras(
         nombres,
@@ -387,18 +624,31 @@ def mostrar_promedio_superficie(paises):
     )
 
 def preparar_datos_grafico(paises, campo):
-    """Preparar nombres y valores de mayor a menor, sin cambiar la lista original."""
-    ordenados = sorted(
-        paises,
-        key=lambda pais: pais[campo],
-        reverse=True
-    )
+    """Preparar nombres y valores sin modificar la lista original."""
+    if not paises:
+        print("No hay países cargados para preparar el gráfico.")
+        return [], []
 
-    nombres = []
-    valores = []
+    try:
+        ordenados = sorted(
+            paises,
+            key=lambda pais: pais[campo],
+            reverse=True
+        )
 
-    for pais in ordenados:
-        nombres.append(pais["nombre"])
-        valores.append(pais[campo])
+        nombres = []
+        valores = []
 
-    return nombres, valores
+        for pais in ordenados:
+            nombres.append(pais["nombre"])
+            valores.append(pais[campo])
+
+        return nombres, valores
+
+    except KeyError:
+        print("Error: falta el nombre o el dato solicitado en algún país.")
+        return [], []
+
+    except TypeError:
+        print("Error: los datos de los países no permiten preparar el gráfico.")
+        return [], []
