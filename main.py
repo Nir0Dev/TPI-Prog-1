@@ -3,7 +3,13 @@ from gestion_paises import cargar_paises, agregar_pais, actualizar_pais, guardar
 from consultas import buscar_pais, filtrar_continente, filtrar_rango
 from operaciones import eliminar_pais, limpiar_paises, ordenar_paises
 from estadisticas import resumen_estadistico, calcular_densidad
-from graficos import mostrar_estadisticas_pais, mostrar_estadisticas_generales
+from graficos import (
+    mostrar_estadisticas_pais,
+    mostrar_estadisticas_generales,
+    mostrar_extremos_poblacion,
+    mostrar_promedio_poblacion,
+    mostrar_promedio_superficie
+)
 from api_paises import consultar_indicador, transformar_indicadores, preparar_registros_csv
 
 OPCIONES = {
@@ -67,13 +73,16 @@ def ejecutar_opcion(opcion, paises):
         
         while True:
             print("\n=== ESTADÍSTICAS ===")
-            print("1. Estadísticas generales")
+            print("1. Cantidad por continente y resumen general")
             print("2. Estadísticas de un país")
-            print("3. Volver al menú principal")
+            print("3. Países con mayor y menor población")
+            print("4. Población por país y promedio")
+            print("5. Superficie por país y promedio")
+            print("6. Volver al menú principal")
 
             seleccion = input("Elije una opcion: ").strip()
             
-            if seleccion == "3":
+            if seleccion == "6":
                 return
             
             elif seleccion == "1":
@@ -91,8 +100,18 @@ def ejecutar_opcion(opcion, paises):
                     continue
 
                 mostrar_estadisticas_pais(paises[indice])
+
+            elif seleccion == "3":
+                mostrar_extremos_poblacion(paises)
+
+            elif seleccion == "4":
+                mostrar_promedio_poblacion(paises)
+
+            elif seleccion == "5":
+                mostrar_promedio_superficie(paises)
+
             else:
-                print("Opcion invalida. Elija 1, 2 o 3")
+                print("Opción inválida. Elegí un número del 1 al 6.")
 
     elif opcion == "3":
         lista_actualizada = eliminar_pais(paises_actualizados, input("Nombre del país a eliminar: "))
