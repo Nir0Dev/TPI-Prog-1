@@ -1,6 +1,19 @@
 import matplotlib.pyplot as plt
 from estadisticas import resumen_estadistico,  estadisticas_pais
 from matplotlib.ticker import FuncFormatter
+from matplotlib.widgets import Button
+
+
+def crear_boton_volver(figura, posicion):
+    """Crear un botón que cierre la figura."""
+    boton = Button(figura.add_axes(posicion), "Volver")
+
+    def volver(evento):
+        plt.close(figura)
+
+    boton.on_clicked(volver)
+
+    return boton
 
 def mostrar_estadisticas_pais(pais, historia=None):
     """Una figura: gráfico arriba y datos del país debajo, usando plt.show().
@@ -21,26 +34,83 @@ def mostrar_estadisticas_pais(pais, historia=None):
         f"Densidad: {formatear_numero(datos['densidad'])} habitantes por km²"
     )
 
+    adicionales = 0
+
     for campo, valor in datos.items():
-        if campo not in ("nombre", "poblacion", "superficie", "continente", "densidad"):
-            texto += f"\n{campo}: {valor}"
+        if campo in ("nombre", "poblacion", "superficie",
+                     "continente", "densidad", "anio"):
+            continue
 
-    plt.figure(figsize=(10, 8))
+        if valor is None or str(valor).strip() == "":
+            continue
 
-    plt.subplot(2, 1, 1)
-    plt.bar([datos["nombre"]], [datos["densidad"]], width=0.3)
-    plt.xlim(-1, 1)
-    plt.title("Densidad de población")
-    plt.xlabel("País")
-    plt.ylabel("Habitantes por km²")
-    plt.gca().yaxis.set_major_formatter(FuncFormatter(formatear_numero))
+        etiqueta = campo.replace("_", " ").capitalize()
+        texto += f"\n{etiqueta}: {valor}"
+        adicionales += 1
 
-    plt.subplot(2, 1, 2)
-    plt.axis("off")
-    plt.text(0, 0.9, texto, va="top", fontsize=11)
+    if adicionales == 0:
+        texto += "\n\nNo hay datos adicionales guardados para este país."
 
-    plt.tight_layout()
-    plt.show()
+    figura = plt.figure(figsize=(12, 10))
+
+    eje = figura.add_axes([0.12, 0.65, 0.80, 0.24])
+    eje_texto = figura.add_axes([0.06, 0.14, 0.90, 0.42])
+    eje_texto.axis("off")
+    eje_texto.text(0, 1, texto, va="top", fontsize=9)
+
+    boton_poblacion = Button(
+        figura.add_axes([0.06, 0.04, 0.20, 0.05]),
+        "Población"
+    )
+    boton_superficie = Button(
+        figura.add_axes([0.29, 0.04, 0.20, 0.05]),
+        "Superficie"
+    )
+    boton_densidad = Button(
+        figura.add_axes([0.52, 0.04, 0.20, 0.05]),
+        "Densidad"
+    )
+    boton_volver = crear_boton_volver(
+        figura, [0.75, 0.04, 0.20, 0.05]
+    )
+
+    def dibujar(campo, titulo, unidad):
+        eje.clear()
+
+        valor = datos[campo]
+        barras = eje.bar([datos["nombre"]], [valor], width=0.3)
+
+        eje.set_xlim(-1, 1)
+        eje.set_ylim(0, max(valor * 1.20, 1))
+        eje.set_title(titulo)
+        eje.set_ylabel(unidad)
+        eje.yaxis.set_major_formatter(
+            FuncFormatter(formatear_numero)
+        )
+        eje.bar_label(
+            barras,
+            labels=[formatear_numero(valor)],
+            padding=3
+        )
+
+        figura.canvas.draw_idle()
+
+    def ver_poblacion(evento):
+        dibujar("poblacion", "Población", "Habitantes")
+
+    def ver_superficie(evento):
+        dibujar("superficie", "Superficie", "km²")
+
+    def ver_densidad(evento):
+        dibujar("densidad", "Densidad de población", "Habitantes por km²")
+
+
+    boton_poblacion.on_clicked(ver_poblacion)
+    boton_superficie.on_clicked(ver_superficie)
+    boton_densidad.on_clicked(ver_densidad)
+
+    ver_densidad(None)
+    plt.show(block=True)
 
 def mostrar_estadisticas_generales(paises):
     """Una figura de comparación + valores de estadísticas debajo."""
@@ -70,7 +140,7 @@ def mostrar_estadisticas_generales(paises):
         f"{formatear_numero(resumen['promedio_superficie'])} km²"
     )
 
-    plt.figure(figsize=(10,8))
+    figura = plt.figure(figsize=(10, 8))
     plt.subplot(2,1,1)
     plt.bar(continentes, cantidades)
     plt.title("Cantidad de paises cargados por continente")
@@ -82,65 +152,158 @@ def mostrar_estadisticas_generales(paises):
     plt.axis("off")
     plt.text(0, 0.9, texto, va="top", fontsize=11)
 
-    plt.tight_layout()
-    plt.show()
+    plt.tight_layout(rect=(0, 0.12, 1, 1))
+    boton_volver = crear_boton_volver(
+        figura, [0.40, 0.03, 0.20, 0.05]
+    )
+    plt.show(block=True)
 
 def mostrar_grafico_barras(etiquetas, valores, titulo, unidad, texto, promedio=None):
-    """Mostrar barras arriba y los resultados debajo."""
-    plt.figure(figsize=(10, 8))
-
-    plt.subplot(2, 1, 1)
-    plt.bar(etiquetas, valores)
-    plt.title(titulo)
-    plt.ylabel(unidad)
-
-    plt.gca().yaxis.set_major_formatter(FuncFormatter(formatear_numero))
-
-    plt.xticks(rotation=90, fontsize=8)
-
-    if promedio is not None:
-        plt.axhline(
-            y=promedio,
-            color="red",
-            linestyle="--",
-            label=f"Promedio: {formatear_numero(promedio)}"
-        )
-        plt.legend()
-
-    plt.subplot(2, 1, 2)
-    plt.axis("off")
-    plt.text(0, 0.9, texto, va="top", fontsize=11)
-
-    plt.tight_layout()
-    plt.show()
-
-def mostrar_extremos_poblacion(paises):
-    """Mostrar todos los países ordenados por población."""
-    resumen = resumen_estadistico(paises)
-
-    if resumen is None:
+    """Mostrar hasta 15 países por página con botones de navegación."""
+    if not etiquetas or len(etiquetas) != len(valores):
+        print("No hay datos válidos para mostrar el gráfico.")
         return
 
-    nombres, poblaciones = preparar_datos_grafico(paises, "poblacion")
+    por_pagina = 15
+    cantidad = len(etiquetas)
+    paginas = (cantidad + por_pagina - 1) // por_pagina
+    estado = {"pagina": 0, "descendente": True}
 
-    mayor = resumen["mayor_poblacion"]
-    menor = resumen["menor_poblacion"]
+    figura = plt.figure(figsize=(12, 9))
 
-    texto = (
-        f"Mayor población: {mayor['nombre']} "
-        f"({formatear_numero(mayor['poblacion'])} habitantes)\n"
-        f"Menor población: {menor['nombre']} "
-        f"({formatear_numero(menor['poblacion'])} habitantes)\n\n"
-        "Los países se muestran de mayor a menor población."
+    eje = figura.add_axes([0.36, 0.40, 0.60, 0.50])
+    eje_texto = figura.add_axes([0.06, 0.15, 0.90, 0.18])
+    eje_texto.axis("off")
+    eje_texto.text(0, 1, texto, va="top", fontsize=10)
+
+    boton_anterior = Button(
+        figura.add_axes([0.035, 0.04, 0.17, 0.05]),
+        "Anterior"
+    )
+    boton_siguiente = Button(
+        figura.add_axes([0.22, 0.04, 0.17, 0.05]),
+        "Siguiente"
+    )
+    boton_descendente = Button(
+        figura.add_axes([0.405, 0.04, 0.17, 0.05]),
+        "Mayor a menor"
+    )
+    boton_ascendente = Button(
+        figura.add_axes([0.59, 0.04, 0.17, 0.05]),
+        "Menor a mayor"
+    )
+    boton_volver = Button(
+        figura.add_axes([0.775, 0.04, 0.17, 0.05]),
+        "Volver"
     )
 
-    mostrar_grafico_barras(
-        nombres,
-        poblaciones,
-        "Países ordenados por población: mayor a menor",
-        "Habitantes",
-        texto
-    )
+    limite = max(valores)
+
+    if promedio is not None:
+        limite = max(limite, promedio)
+
+    if limite <= 0:
+        limite = 1
+
+    def dibujar_pagina():
+        inicio = estado["pagina"] * por_pagina
+        fin = min(inicio + por_pagina, cantidad)
+
+        indices = sorted(
+            range(cantidad),
+            key=lambda indice: valores[indice],
+            reverse=estado["descendente"]
+        )
+
+        nombres_pagina = []
+        valores_pagina = []
+
+        for indice in indices[inicio:fin]:
+            nombres_pagina.append(etiquetas[indice])
+            valores_pagina.append(valores[indice])
+
+        posiciones = range(len(nombres_pagina))
+
+        eje.clear()
+
+        barras = eje.barh(posiciones, valores_pagina)
+        eje.set_yticks(posiciones, labels=nombres_pagina)
+        eje.tick_params(axis="y", labelsize=8)
+
+        # Mantener el primer país arriba y espacio para 15 filas.
+        eje.set_ylim(por_pagina - 0.5, -0.5)
+        eje.set_xlim(0, limite * 1.20)
+
+        eje.set_xlabel(unidad)
+        eje.xaxis.set_major_formatter(
+            FuncFormatter(formatear_numero)
+        )
+
+        etiquetas_valores = []
+
+        for valor in valores_pagina:
+            etiquetas_valores.append(formatear_numero(valor))
+
+        eje.bar_label(
+            barras,
+            labels=etiquetas_valores,
+            padding=3,
+            fontsize=8
+        )
+
+        if promedio is not None:
+            eje.axvline(
+                x=promedio,
+                color="red",
+                linestyle="--",
+                label=f"Promedio general: {formatear_numero(promedio)}"
+            )
+            eje.legend(loc="lower right", fontsize=9)
+
+        eje.set_title(
+            f"{titulo}\n"
+            f"Países {inicio + 1}–{fin} de {cantidad} "
+            f"| Página {estado['pagina'] + 1} de {paginas}",
+            fontsize=11
+        )
+
+        boton_anterior.set_active(estado["pagina"] > 0)
+        boton_siguiente.set_active(estado["pagina"] < paginas - 1)
+
+        figura.canvas.draw_idle()
+
+    def pagina_anterior(evento):
+        if estado["pagina"] > 0:
+            estado["pagina"] -= 1
+            dibujar_pagina()
+
+    def pagina_siguiente(evento):
+        if estado["pagina"] < paginas - 1:
+            estado["pagina"] += 1
+            dibujar_pagina()
+
+    def volver(evento):
+        plt.close(figura)
+
+    def ordenar_descendente(evento):
+        estado["descendente"] = True
+        estado["pagina"] = 0
+        dibujar_pagina()
+
+    def ordenar_ascendente(evento):
+        estado["descendente"] = False
+        estado["pagina"] = 0
+        dibujar_pagina()
+
+    boton_descendente.on_clicked(ordenar_descendente)
+    boton_ascendente.on_clicked(ordenar_ascendente)
+
+    boton_anterior.on_clicked(pagina_anterior)
+    boton_siguiente.on_clicked(pagina_siguiente)
+    boton_volver.on_clicked(volver)
+
+    dibujar_pagina()
+    plt.show(block=True)
 
 def mostrar_promedio_poblacion(paises):
     """Comparar las poblaciones con el promedio del dataset."""
@@ -153,11 +316,17 @@ def mostrar_promedio_poblacion(paises):
 
     promedio = resumen["promedio_poblacion"]
 
+    mayor = resumen["mayor_poblacion"]
+    menor = resumen["menor_poblacion"]
+
     texto = (
         f"Cantidad de países analizados: {len(paises)}\n"
-        f"Promedio de población: {formatear_numero(promedio)} habitantes\n\n"
-        "Cada barra representa la población de un país.\n"
-        "La línea roja indica el promedio de los países cargados."
+        f"Promedio de población: {formatear_numero(promedio)} habitantes\n"
+        f"Mayor población: {mayor['nombre']} "
+        f"({formatear_numero(mayor['poblacion'])} habitantes)\n"
+        f"Menor población: {menor['nombre']} "
+        f"({formatear_numero(menor['poblacion'])} habitantes)\n\n"
+        "La línea roja indica el promedio general."
     )
 
     mostrar_grafico_barras(

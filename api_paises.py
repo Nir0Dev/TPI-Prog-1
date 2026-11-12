@@ -2,36 +2,276 @@
 # Responsabilidad: descargar, validar y entregar registros.
 # NO escribe el CSV, solo devuelve lista de diccionarios validados.
 import requests
+import unicodedata
+from time import sleep
+from gestion_paises import convertir_entero, validar_pais, limpiar_texto
 
 URL_POBLACION = "https://api.worldbank.org/v2/country/all/indicator/SP.POP.TOTL"
 URL_SUPERFICIE = "https://api.worldbank.org/v2/country/all/indicator/AG.SRF.TOTL.K2"
+URL_CATALOGO = "https://api.worldbank.org/v2/es/country"
 ANIO = "2023"
 
-def _descargar_indicador(url, nombre_indicador):
-    """Descarga un indicador del Banco Mundial. Devuelve lista de registros JSON."""
-    try:
-        params = {"format": "json", "per_page": 20000, "date": ANIO}
-        respuesta = requests.get(url, params=params, timeout=20)
-        respuesta.raise_for_status()
-        datos = respuesta.json()
-        # La API devuelve [metadata, [registros]] . Si no hay datos, devuelve []
-        if len(datos) < 2 or datos[1] is None:
-            print(f"Sin datos para {nombre_indicador}")
-            return []
-        return datos[1]
-    except requests.exceptions.RequestException as e:
-        print(f"Error de conexión con la API ({nombre_indicador}): {e}")
-        return []
+CODIGOS_CSV = {
+    "Argentina": "ARG",
+    "Brasil": "BRA",
+    "Chile": "CHL",
+    "Uruguay": "URY",
+    "Perú": "PER",
+    "Colombia": "COL",
+    "México": "MEX",
+    "Canadá": "CAN",
+    "Estados Unidos": "USA",
+    "Cuba": "CUB",
+    "Alemania": "DEU",
+    "Francia": "FRA",
+    "España": "ESP",
+    "Italia": "ITA",
+    "Portugal": "PRT",
+    "Noruega": "NOR",
+    "Japón": "JPN",
+    "China": "CHN",
+    "India": "IND",
+    "Corea del Sur": "KOR",
+    "Indonesia": "IDN",
+    "Egipto": "EGY",
+    "Nigeria": "NGA",
+    "Sudáfrica": "ZAF",
+    "Kenia": "KEN",
+    "Australia": "AUS",
+    "Nueva Zelanda": "NZL"
+}
 
-def _extraer_valor(registro):
-    """Devuelve el valor numérico o None si falta / no es numérico."""
+def _descargar_registros(url, nombre, parametros):
+    """Descargar todas las páginas y devolver una lista de diccionarios."""
+    registros = []
+    pagina = 1
+    params = parametros.copy()
+
+    while True:
+        params["page"] = pagina
+
+        for intento in range(1, 4):
+            try:
+                respuesta = requests.get(
+                    url,
+                    params=params,
+                    timeout=(10, 45)
+                )
+                respuesta.raise_for_status()
+                break
+
+            except requests.exceptions.RequestException as error:
+                print(
+                    f"Error al descargar {nombre}, "
+                    f"página {pagina}, intento {intento} de 3: {error}"
+                )
+
+                if error.response is not None:
+                    estado = error.response.status_code
+
+                    if estado < 500 and estado != 429:
+                        return []
+
+                if intento == 3:
+                    print(
+                        "Se agotaron los intentos. "
+                        "Los datos del CSV se conservan."
+                    )
+                    return []
+
+                sleep(intento * 2)
+
+        try:
+            datos = respuesta.json()
+        except ValueError:
+            print(f"La respuesta de {nombre} no contiene JSON válido.")
+            return []
+
+        if not isinstance(datos, list) or len(datos) != 2:
+            print(f"La respuesta de {nombre} tiene un formato inesperado.")
+            return []
+
+        informacion = datos[0]
+        filas = datos[1]
+
+        if not isinstance(informacion, dict):
+            print(f"La información de páginas de {nombre} no es válida.")
+            return []
+
+        if filas is None:
+            print(f"No hay datos disponibles para {nombre}.")
+            return []
+
+        if not isinstance(filas, list):
+            print(f"Los registros de {nombre} no tienen el formato esperado.")
+            return []
+
+        try:
+            paginas = int(informacion["pages"])
+        except (KeyError, TypeError, ValueError):
+            print(f"No se pudo interpretar la paginación de {nombre}.")
+            return []
+
+        if paginas < pagina:
+            print(f"La paginación de {nombre} es inconsistente.")
+            return []
+
+        for fila in filas:
+            if not isinstance(fila, dict):
+                print(f"Se recibió un registro inválido en {nombre}.")
+                return []
+
+            registros.append(fila)
+
+        if not filas:
+            print(f"No se recibieron registros en la página {pagina} de {nombre}.")
+            return []
+
+        if pagina >= paginas:
+            return registros
+
+        pagina += 1
+
+
+def _descargar_indicador(url, nombre_indicador):
+    """Descargar los registros de un indicador para el año elegido."""
+    parametros = {
+        "format": "json",
+        "per_page": 400,
+        "date": ANIO
+    }
+
+    return _descargar_registros(url, nombre_indicador, parametros)
+
+
+def descargar_catalogo():
+    """Descargar los datos descriptivos de los países."""
+    parametros = {
+        "format": "json",
+        "per_page": 400
+    }
+
+    return _descargar_registros(
+        URL_CATALOGO,
+        "catálogo de países",
+        parametros
+    )
+def obtener_continente(codigo_pais, codigo_region):
+    """Determinar el continente usando la región y las excepciones geográficas."""
+    codigo = str(codigo_pais or "").strip().upper()
+    region = str(codigo_region or "").strip().upper()
+
+    if not codigo:
+        return None
+
+    if region in ("LCN", "NAC"):
+        return "América"
+
+    if region == "SSF":
+        return "África"
+
+    if region == "SAS":
+        return "Asia"
+
+    if region in ("MEA", "MNA"):
+        paises_africanos = (
+            "DZA", "DJI", "EGY", "LBY",
+            "MAR", "SDN", "TUN", "ESH"
+        )
+
+        if codigo in paises_africanos:
+            return "África"
+
+        return "Asia"
+
+    if region == "ECS":
+        paises_asiaticos = (
+            "ARM", "AZE", "CYP", "GEO", "KAZ",
+            "KGZ", "TJK", "TKM", "TUR", "UZB"
+        )
+
+        if codigo in paises_asiaticos:
+            return "Asia"
+
+        return "Europa"
+
+    if region == "EAS":
+        paises_oceania = (
+            "ASM", "AUS", "COK", "FJI", "FSM",
+            "GUM", "KIR", "MHL", "MNP", "NCL",
+            "NFK", "NIU", "NRU", "NZL", "PCN",
+            "PLW", "PNG", "PYF", "SLB", "TKL",
+            "TON", "TUV", "VUT", "WLF", "WSM",
+            "UMI"
+        )
+
+        if codigo in paises_oceania:
+            return "Oceanía"
+
+        return "Asia"
+
+    return None
+
+def preparar_catalogo(registros):
+    """Organizar los países por código y conservar sus datos adicionales."""
+    catalogo = {}
+
+    for registro in registros:
+        if not isinstance(registro, dict):
+            continue
+
+        codigo = str(registro.get("id") or "").strip().upper()
+        nombre = str(registro.get("name") or "").strip()
+        region = registro.get("region")
+
+        if not codigo or not nombre:
+            continue
+
+        if not isinstance(region, dict):
+            continue
+
+        codigo_region = str(region.get("id") or "").strip()
+
+        # Excluir agrupaciones y registros sin región identificable.
+        if codigo_region in ("", "NA"):
+            continue
+        
+        continente = obtener_continente(codigo, codigo_region)
+
+        if continente is None:
+            print(
+                f"Se omitió {nombre}: "
+                f"no se pudo determinar el continente "
+                f"para la región '{codigo_region}'."
+            )
+            continue
+
+        catalogo[codigo] = {
+            "nombre": nombre,
+            "continente": continente,
+            "codigo_pais": codigo,
+            "region": region.get("value") or "",
+            "capital": registro.get("capitalCity") or "",
+            "latitud": registro.get("latitude") or "",
+            "longitud": registro.get("longitude") or ""
+        }
+
+    return catalogo
+
+def _extraer_valor(registro, campo=None):
+    """Convertir población a entero y redondear superficie al km²."""
     valor = registro.get("value")
-    if valor is None:
-        return None
-    try:
-        return int(float(valor))
-    except (ValueError, TypeError):
-        return None
+
+    if campo == "superficie":
+        if isinstance(valor, bool):
+            return None
+
+        try:
+            return round(float(valor))
+        except (ValueError, TypeError, OverflowError):
+            return None
+
+    return convertir_entero(valor)
 
 def _validar_pais(nombre, poblacion, superficie, continente):
     """Valida un país. Devuelve (es_valido, motivo)."""
@@ -47,65 +287,170 @@ def _validar_pais(nombre, poblacion, superficie, continente):
         return False, "población debe ser mayor a 0"
     return True, ""
 
-def _eliminar_duplicados(paises_nuevos, paises_existentes):
-    """Evita duplicados por nombre (sin mayúsculas). Devuelve lista sin repetidos."""
-    nombres_existentes = set()
-    for p in paises_existentes:
-        nombres_existentes.add(p["nombre"].lower())
+def normalizar_nombre_pais(nombre):
+    """Normalizar espacios, mayúsculas y acentos para comparar nombres."""
+    texto = limpiar_texto(nombre).casefold()
+    texto = unicodedata.normalize("NFD", texto)
 
-    sin_duplicados = []
-    for p in paises_nuevos:
-        nombre_min = p["nombre"].lower()
-        if nombre_min in nombres_existentes:
-            print(f"Duplicado ignorado: {p['nombre']} - registro repetido")
+    resultado = ""
+
+    for caracter in texto:
+        if unicodedata.category(caracter) != "Mn":
+            resultado += caracter
+
+    return resultado
+
+def _eliminar_duplicados(paises_nuevos, paises_existentes, catalogo=None):
+    """Omitir países existentes y repetidos usando códigos o nombres."""
+    if catalogo is None:
+        catalogo = {}
+
+    codigos_por_nombre = {}
+
+    for nombre, codigo in CODIGOS_CSV.items():
+        nombre_normalizado = normalizar_nombre_pais(nombre)
+        codigos_por_nombre[nombre_normalizado] = codigo
+
+    for codigo, pais in catalogo.items():
+        nombre_normalizado = normalizar_nombre_pais(pais["nombre"])
+        codigos_por_nombre[nombre_normalizado] = codigo
+
+    identificadores = set()
+
+    for pais in paises_existentes:
+        nombre = normalizar_nombre_pais(pais.get("nombre"))
+        codigo = str(pais.get("codigo_pais") or "").strip().upper()
+
+        if not codigo:
+            codigo = codigos_por_nombre.get(nombre, "")
+
+        if codigo:
+            identificador = "codigo:" + codigo
+        else:
+            identificador = "nombre:" + nombre
+
+        identificadores.add(identificador)
+
+    nuevos = []
+
+    for pais in paises_nuevos:
+        nombre = normalizar_nombre_pais(pais.get("nombre"))
+        codigo = str(pais.get("codigo_pais") or "").strip().upper()
+
+        if not codigo:
+            codigo = codigos_por_nombre.get(nombre, "")
+
+        if codigo:
+            identificador = "codigo:" + codigo
+        else:
+            identificador = "nombre:" + nombre
+
+        if identificador in identificadores:
+            print(f"Duplicado ignorado: {pais['nombre']}")
             continue
-        nombres_existentes.add(nombre_min)
-        sin_duplicados.append(p)
-    return sin_duplicados
 
-def obtener_paises_api(paises_existentes):
-    """Función principal de tu parte. Descarga, une, valida y devuelve registros."""
-    print(f"Descargando datos del Banco Mundial ({ANIO})...")
+        identificadores.add(identificador)
+        nuevos.append(pais)
 
-    datos_pob = _descargar_indicador(URL_POBLACION, "Población SP.POP.TOTL")
-    datos_sup = _descargar_indicador(URL_SUPERFICIE, "Superficie AG.SRF.TOTL.K2")
+    return nuevos
 
-    # 1. Armar diccionario por código de país: {codigo: {nombre, poblacion, superficie, continente}}
+def unir_datos_paises(catalogo, datos_pob, datos_sup):
+    """Unir los indicadores con el catálogo y validar cada país."""
     paises_por_codigo = {}
 
-    for r in datos_pob:
-        codigo = r["country"]["id"]
-        paises_por_codigo[codigo] = {
-            "nombre": r["country"]["value"],
-            "poblacion": _extraer_valor(r),
-            "superficie": None,
-            "continente": r["country"].get("region", {}).get("value", "Sin región")
-        }
+    for codigo, datos in catalogo.items():
+        pais = datos.copy()
+        pais["poblacion"] = None
+        pais["superficie"] = None
+        pais["anio"] = int(ANIO)
 
-    for r in datos_sup:
-        codigo = r["country"]["id"]
-        if codigo in paises_por_codigo:
-            paises_por_codigo[codigo]["superficie"] = _extraer_valor(r)# se saca poblacion y supef _extraer_valor
+        paises_por_codigo[codigo] = pais
 
-    # 2. Validar cada uno
+    indicadores = (
+        ("poblacion", datos_pob),
+        ("superficie", datos_sup)
+    )
+
+    for campo, registros in indicadores:
+        for registro in registros:
+            if not isinstance(registro, dict):
+                continue
+
+            codigo = str(
+                registro.get("countryiso3code") or ""
+            ).strip().upper()
+
+            if codigo not in paises_por_codigo:
+                continue
+
+            if str(registro.get("date")) != str(ANIO):
+                continue
+
+            paises_por_codigo[codigo][campo] = _extraer_valor(
+                registro, campo
+            )
+
     validos = []
-    for codigo in paises_por_codigo:
-        d = paises_por_codigo[codigo]
-        # Caso ejemplo del profesor: Kosovo falta superficie -> se descarta
-        # Brasil población no numérica -> _extraer_valor devuelve None -> se descarta
-        # Chile superficie <= 0 -> se descarta
-        es_valido, motivo = _validar_pais(d["nombre"], d["poblacion"], d["superficie"], d["continente"])
-        if not es_valido:
-            print(f"Descartado {d['nombre']}: {motivo}")
+    omitidos = 0
+
+    for pais in paises_por_codigo.values():
+        pais_limpio, errores = validar_pais(pais)
+
+        if errores:
+            omitidos += 1
             continue
-        validos.append(d)
 
-    # 3. Evitar duplicados contra lo que ya hay en el CSV
-    # Caso ejemplo: ARGENTINA repetido -> se ignora
-    validos = _eliminar_duplicados(validos, paises_existentes)
+        validos.append(pais_limpio)
 
-    print(f"Listo: {len(validos)} países validados desde la API.")
+    if omitidos > 0:
+        print(
+            f"Se omitieron {omitidos} países "
+            "con datos obligatorios ausentes o inválidos."
+        )
+
     return validos
+
+def obtener_paises_api(paises_existentes):
+    """Descargar, unir y validar los países antes de incorporarlos."""
+    print(f"Descargando datos del Banco Mundial ({ANIO})...")
+
+    registros_catalogo = descargar_catalogo()
+
+    if not registros_catalogo:
+        print("No se pudo obtener un catálogo completo.")
+        return []
+
+    catalogo = preparar_catalogo(registros_catalogo)
+
+    if not catalogo:
+        print("El catálogo no contiene países utilizables.")
+        return []
+
+    datos_pob = _descargar_indicador(
+        URL_POBLACION,
+        "Población SP.POP.TOTL"
+    )
+
+    if not datos_pob:
+        print("No se pudo obtener población. Importación cancelada.")
+        return []
+
+    datos_sup = _descargar_indicador(
+        URL_SUPERFICIE,
+        "Superficie AG.SRF.TOTL.K2"
+    )
+
+    if not datos_sup:
+        print("No se pudo obtener superficie. Importación cancelada.")
+        return []
+
+    validos = unir_datos_paises(catalogo, datos_pob, datos_sup)
+
+    nuevos = _eliminar_duplicados(validos, paises_existentes, catalogo)
+
+    print(f"Listo: {len(nuevos)} países preparados para incorporar.")
+
+    return nuevos
 
 # --- Prueba con datos simulados, sin internet (para demostrar validaciones) ---
 def probar_validaciones_simuladas():

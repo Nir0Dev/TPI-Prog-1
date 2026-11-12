@@ -1,5 +1,4 @@
-"""Integrante 1 — CSV, persistencia y validaciones.
-
+"""
 Este módulo es el ÚNICO del proyecto que lee y escribe data/paises.csv.
 Los países se manejan como una lista de diccionarios, por ejemplo:
 

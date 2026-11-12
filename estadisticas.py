@@ -1,5 +1,3 @@
-
-
 def resumen_estadistico(paises):
     """Mayor y menor población; promedio población/superficie; conteo continente.
 
