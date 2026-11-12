@@ -59,6 +59,40 @@ def ejecutar_opcion(opcion, paises):
         if superficie:
             cambios["superficie"] = superficie
         exito, mensaje = actualizar_pais(paises_actualizados, nombre, cambios)
+    
+    elif opcion == "8":
+        if not paises:
+            print("No hay paises cargados para mostrar estadisticas.")
+            return
+        
+        while True:
+            print("\n=== ESTADÍSTICAS ===")
+            print("1. Estadísticas generales")
+            print("2. Estadísticas de un país")
+            print("3. Volver al menú principal")
+
+            seleccion = input("Elije una opcion: ").strip()
+            
+            if seleccion == "3":
+                return
+            
+            elif seleccion == "1":
+                mostrar_estadisticas_generales(paises)
+            elif seleccion == "2":
+                nombre = input("Nombre del pais: ").strip()
+
+                if not nombre:
+                    print("Error: ingrese el nombre de un pais.")
+                    continue
+                indice = indice_de_pais(paises, nombre)
+
+                if indice == -1:
+                    print(f"No se encontro el pais '{nombre}'.")
+                    continue
+
+                mostrar_estadisticas_pais(paises[indice])
+            else:
+                print("Opcion invalida. Elija 1, 2 o 3")
     else:
         raise NotImplementedError(f"Opción {opcion} pendiente de integración")
 
