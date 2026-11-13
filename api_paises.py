@@ -587,55 +587,5 @@ def probar_validaciones_simuladas():
     print("Resultado simulado:", validos)
     return validos
 
-# --- Adaptadores para que main.py pueda importar ---
-
-def consultar_indicador(codigo_indicador="SP.POP.TOTL", pais="all"):
-    """Consulta un indicador en la API del Banco Mundial y devuelve la lista cruda."""
-    import requests
-    url = f"https://api.worldbank.org/v2/country/{pais}/indicator/{codigo_indicador}"
-    resp = requests.get(url, params={"format": "json", "per_page": 20000}, timeout=30)
-    resp.raise_for_status()
-    datos = resp.json()
-    if isinstance(datos, list) and len(datos) > 1:
-        return datos[1]
-    return datos if isinstance(datos, list) else []
-
-def transformar_indicadores(datos):
-    """Pasa los datos crudos de la API a lista de dicts limpios."""
-    registros = []
-    if isinstance(datos, list) and len(datos) == 2 and isinstance(datos[1], list):
-        datos = datos[1]
-    for item in datos or []:
-        try:
-            registros.append({
-                "pais": item.get("country", {}).get("value") if isinstance(item.get("country"), dict) else item.get("pais"),
-                "codigo_pais": item.get("countryiso3code") or item.get("codigo_pais"),
-                "anio": int(item.get("date")) if str(item.get("date", "")).isdigit() else item.get("anio"),
-                "indicador": item.get("indicator", {}).get("value") if isinstance(item.get("indicator"), dict) else item.get("indicador"),
-                "valor": item.get("value") if item.get("value") is not None else item.get("valor"),
-            })
-        except Exception:
-            continue
-    return registros
-
-def preparar_registros_csv(registros):
-    """Deja solo registros validos y listos para guardar en CSV."""
-    listos = []
-    for r in registros or []:
-        if not r.get("pais") or r.get("valor") is None or r.get("anio") is None:
-            continue
-        listos.append({
-            "pais": str(r["pais"]),
-            "codigo_pais": str(r.get("codigo_pais", "")),
-            "anio": int(r["anio"]),
-            "indicador": str(r.get("indicador", "")),
-            "valor": float(r["valor"]),
-        })
-    return listos
-
-def validar_registros_api(registros):
-    """Alias para compatibilidad con el esqueleto original."""
-    return preparar_registros_csv(registros)
-
 if __name__ == "__main__":
     probar_validaciones_simuladas()

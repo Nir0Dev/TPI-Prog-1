@@ -2,7 +2,6 @@
 from gestion_paises import cargar_paises, agregar_pais, actualizar_pais, guardar_paises, indice_de_pais
 from consultas import buscar_pais, filtrar_continente, filtrar_rango
 from operaciones import eliminar_pais, limpiar_paises, ordenar_paises
-from estadisticas import resumen_estadistico, calcular_densidad
 from graficos import (
     mostrar_estadisticas_pais,
     mostrar_estadisticas_generales,
@@ -90,24 +89,81 @@ def ejecutar_opcion(opcion, paises):
         else:
             exito, mensaje = False, "Limpieza cancelada."
 
-    elif opcion == "7":
-        parametro = input("¿Desea ordenar por nombre, población o superficie?")
-        resultado = ordenar_paises(paises_actualizados, parametro)
-        
-        if resultado is None:
+    elif opcion == "5":
+        nombre = input("Nombre del país a buscar: ").strip()
+        encontrados = buscar_pais(paises_actualizados, nombre)
+
+        if not encontrados:
+            print("No se encontraron países para esa búsqueda.")
             return
-        
-        lista_ordenada, campo = resultado
-        print(lista_ordenada)
+
+        print(f"Coincidencias encontradas: {len(encontrados)}")
+
+        for pais in encontrados:
+            print(pais)
 
         return
-        #En caso de querer actualizar el csv con la lista ordenada utilizar el codigo de abajo y eliminar el return de la linea anterior
-        """ paises_actualizados = lista_ordenada
 
-        if lista_ordenada == None:
-            exito, mensaje = False, "Fallo al ordenar la lista."
-        else:
-            exito, mensaje = True, f"Se ha ordenado la lista en base a {campo}" """
+    elif opcion == "6":
+        if not paises_actualizados:
+            print("No hay países cargados para filtrar.")
+            return
+
+        while True:
+            print("Filtrar por:")
+            print("1. Continente")
+            print("2. Población")
+            print("3. Superficie")
+
+            eleccion = input("Elegí una opción: ").strip()
+
+            if eleccion == "1":
+                continente = input("Continente: ").strip()
+                filtrados = filtrar_continente(
+                    paises_actualizados, continente
+                )
+
+            elif eleccion in ("2", "3"):
+                filtrados = filtrar_rango(
+                    paises_actualizados, eleccion
+                )
+
+            else:
+                print("Opción inválida. Elegí 1, 2 o 3.")
+                continue
+
+            if filtrados is None:
+                return
+
+            if not filtrados:
+                print("No hay países que coincidan con el filtro.")
+                return
+
+            for pais in filtrados:
+                print(pais)
+
+            return
+
+    elif opcion == "7":
+        if not paises_actualizados:
+            print("No hay países cargados para ordenar.")
+            return
+
+        parametro = input(
+            "Ordenar por nombre, población o superficie: "
+        ).strip()
+
+        lista_ordenada = ordenar_paises(
+            paises_actualizados, parametro
+        )
+
+        if lista_ordenada is None:
+            return
+
+        for pais in lista_ordenada:
+            print(pais)
+
+        return
     
     elif opcion == "8":
         if not paises:
