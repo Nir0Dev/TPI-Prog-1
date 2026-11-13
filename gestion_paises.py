@@ -18,6 +18,12 @@ COLUMNAS_OBLIGATORIAS = ("nombre", "poblacion", "superficie", "continente")
 CAMPOS_TEXTO = ("nombre", "continente")
 CAMPOS_NUMERICOS = ("poblacion", "superficie")
 
+# Topes para rechazar valores absurdos (por ejemplo, 10 elevado a la 400).
+# Ningún país puede tener más habitantes que el mundo entero (unos 8.200 millones)
+# ni más superficie que toda la tierra firme del planeta (unos 149 millones de km²).
+POBLACION_MAXIMA = 10_000_000_000  # 10.000 millones de habitantes
+SUPERFICIE_MAXIMA = 150_000_000    # 150 millones de km²
+
 
 # ---------------------------------------------------------------------------
 # Funciones auxiliares
@@ -49,6 +55,18 @@ def convertir_entero(valor):
     if numero.is_integer():
         return int(numero)
     return None
+
+
+def formatear_numero(numero):
+    """Escribir un entero con puntos de miles, como en Argentina: 10.000.000.000."""
+    return f"{numero:,}".replace(",", ".")
+
+
+def resumir(texto, largo=30):
+    """Acortar textos muy largos para que los mensajes de error se puedan leer."""
+    if len(texto) <= largo:
+        return texto
+    return texto[:largo] + "…"
 
 
 def indice_de_pais(paises, nombre):
@@ -104,8 +122,8 @@ def crear_plantilla(ruta=RUTA_CSV):
 def validar_pais(pais):
     """Revisar un país y devolver una versión "limpia".
 
-    Reglas: nombre y continente no vacíos y con letras; población entera >= 0;
-    superficie entera > 0.
+    Reglas: nombre y continente no vacíos y con letras; población entera entre
+    0 y POBLACION_MAXIMA; superficie entera mayor a 0 y hasta SUPERFICIE_MAXIMA.
 
     Devuelve una tupla (pais_limpio, errores):
       - pais_limpio: copia del diccionario con textos limpios y números como int
@@ -121,7 +139,7 @@ def validar_pais(pais):
         if texto == "":
             errores.append(f"El campo '{campo}' no puede estar vacío.")
         elif not any(caracter.isalpha() for caracter in texto):
-            errores.append(f"El campo '{campo}' debe contener letras (se recibió '{texto}').")
+            errores.append(f"El campo '{campo}' debe contener letras (se recibió '{resumir(texto)}').")
         limpio[campo] = texto
 
     for campo in CAMPOS_NUMERICOS:
@@ -130,11 +148,17 @@ def validar_pais(pais):
         if texto == "":
             errores.append(f"El campo '{campo}' no puede estar vacío.")
         elif numero is None:
-            errores.append(f"El campo '{campo}' debe ser un número entero (se recibió '{texto}').")
+            errores.append(f"El campo '{campo}' debe ser un número entero (se recibió '{resumir(texto)}').")
         elif campo == "poblacion" and numero < 0:
             errores.append("La población no puede ser negativa.")
+        elif campo == "poblacion" and numero > POBLACION_MAXIMA:
+            errores.append(f"La población no puede superar {formatear_numero(POBLACION_MAXIMA)} "
+                           "habitantes (sería más que la población del mundo).")
         elif campo == "superficie" and numero <= 0:
             errores.append("La superficie debe ser mayor a 0.")
+        elif campo == "superficie" and numero > SUPERFICIE_MAXIMA:
+            errores.append(f"La superficie no puede superar {formatear_numero(SUPERFICIE_MAXIMA)} km² "
+                           "(sería más que toda la tierra firme del planeta).")
         else:
             limpio[campo] = numero
 
