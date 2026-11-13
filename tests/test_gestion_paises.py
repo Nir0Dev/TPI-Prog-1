@@ -11,6 +11,8 @@ from pathlib import Path
 
 from gestion_paises import (
     COLUMNAS_OBLIGATORIAS,
+    POBLACION_MAXIMA,
+    SUPERFICIE_MAXIMA,
     actualizar_pais,
     agregar_pais,
     cargar_paises,
@@ -94,6 +96,34 @@ class TestValidarPais(unittest.TestCase):
             with self.subTest(pais=pais):
                 _, errores = validar_pais(pais)
                 self.assertNotEqual(errores, [])
+
+    def test_acepta_los_paises_reales_mas_grandes_y_el_tope_justo(self):
+        for poblacion, superficie in [(1428627663, 3287259),   # India: la más poblada
+                                      (143826130, 17098246),   # Rusia: la más extensa
+                                      (POBLACION_MAXIMA, SUPERFICIE_MAXIMA)]:
+            with self.subTest(poblacion=poblacion, superficie=superficie):
+                _, errores = validar_pais(pais_ejemplo(poblacion=poblacion, superficie=superficie))
+                self.assertEqual(errores, [])
+
+    def test_rechaza_valores_absurdos_con_mensaje_claro(self):
+        diez_a_la_400 = "1" + "0" * 400
+        casos = [
+            (pais_ejemplo(poblacion=diez_a_la_400), "población no puede superar 10.000.000.000"),
+            (pais_ejemplo(poblacion=POBLACION_MAXIMA + 1), "población no puede superar"),
+            (pais_ejemplo(superficie=10 ** 500), "superficie no puede superar 150.000.000 km²"),
+            (pais_ejemplo(superficie=SUPERFICIE_MAXIMA + 1), "superficie no puede superar"),
+        ]
+        for pais, esperado in casos:
+            with self.subTest(esperado=esperado):
+                _, errores = validar_pais(pais)
+                self.assertEqual(len(errores), 1)
+                self.assertIn(esperado, errores[0])
+
+    def test_numero_gigante_no_llena_la_pantalla(self):
+        # Más de 4300 dígitos: Python ni siquiera lo convierte con int()
+        _, errores = validar_pais(pais_ejemplo(poblacion="9" * 5000))
+        self.assertEqual(len(errores), 1)
+        self.assertLess(len(errores[0]), 120)
 
     def test_acepta_decimales_en_cero_y_conserva_extras(self):
         limpio, errores = validar_pais(pais_ejemplo(superficie=2780400.0, iso3="ARG"))
