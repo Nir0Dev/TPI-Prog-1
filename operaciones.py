@@ -22,13 +22,13 @@ def ordenar_paises(paises, campo, descendente=False):
                 if opcion not in ("asc", "dsc"):
                     print("Debe seleccionar 'asc' o 'dsc'")
                     continue
-                else: 
+                else:
                     descendente = opcion == "dsc"
                     break
 
         paises_ordenados = sorted(paises, key=lambda x: x[campo], reverse=descendente)
         return paises_ordenados
-    
+
     except ValueError as error:
         print(error)
         return None

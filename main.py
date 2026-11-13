@@ -2,9 +2,16 @@
 from gestion_paises import cargar_paises, agregar_pais, actualizar_pais, guardar_paises, indice_de_pais
 from consultas import buscar_pais, filtrar_continente, filtrar_rango
 from operaciones import eliminar_pais, limpiar_paises, ordenar_paises
-from estadisticas import resumen_estadistico, calcular_densidad
-from graficos import mostrar_estadisticas_pais, mostrar_estadisticas_generales
-from api_paises import consultar_indicador, transformar_indicadores, preparar_registros_csv
+from graficos import (
+    mostrar_estadisticas_pais,
+    mostrar_estadisticas_generales,
+    mostrar_promedio_poblacion,
+    mostrar_promedio_superficie
+)
+from api_paises import (
+    obtener_paises_api,
+    preparar_integracion_api
+)
 
 OPCIONES = {
     "1": "Agregar país",
@@ -59,6 +66,8 @@ def ejecutar_opcion(opcion, paises):
         if superficie:
             cambios["superficie"] = superficie
         exito, mensaje = actualizar_pais(paises_actualizados, nombre, cambios)
+    
+    
     elif opcion == "3":
         lista_actualizada = eliminar_pais(paises_actualizados, input("Nombre del país a eliminar: "))
         if lista_actualizada is None:
@@ -79,68 +88,172 @@ def ejecutar_opcion(opcion, paises):
             exito, mensaje = True, "Todos los registros han sido eliminados de la lista."
         else:
             exito, mensaje = False, "Limpieza cancelada."
-    elif opcion == "5":
-        print("Ingrese el nombre del país que desea buscar: ", end="")
-        nombre = input()
-        paises_encontrados = buscar_pais(paises_actualizados, nombre)
 
-        if paises_encontrados is not None and len(paises_encontrados) == 1:
-            print(f"Coincidencia encontrada: \n{paises_encontrados[0]}")
+    elif opcion == "5":
+        nombre = input("Nombre del país a buscar: ").strip()
+        encontrados = buscar_pais(paises_actualizados, nombre)
+
+        if not encontrados:
+            print("No se encontraron países para esa búsqueda.")
             return
-        elif paises_encontrados is not None and len(paises_encontrados) > 1:
-            print(f"Se encontraron varias coincidencias para {nombre}")
-            for pais in paises_encontrados:
-                print(pais)
-            return
-        else:
-            exito, mensaje = False, print(f"No hay ningún país que coincida con {nombre}")
+
+        print(f"Coincidencias encontradas: {len(encontrados)}")
+
+        for pais in encontrados:
+            print(pais)
+
+        return
+
     elif opcion == "6":
+        if not paises_actualizados:
+            print("No hay países cargados para filtrar.")
+            return
+
         while True:
-            print("Desea filtrar por\n1) Continente\n2) Población\n3) Superficie")
-            eleccion = input().strip()
-            match eleccion:
-                case "1":
-                    print("Seleccione un continente para mostrar la información de sus paises: ", end="")
-                    continente = input()
-                    paises_filtrados = filtrar_continente(paises_actualizados, continente)
-                    print(f"Mostrando la información disponible para los paises de {continente.lower().strip()}")
-                    for pais in paises_filtrados:
-                        print(pais)
-                    return
-                case "2" | "3":
-                    paises_filtrados = filtrar_rango(paises_actualizados, eleccion)
-                    for pais in paises_filtrados:
-                        print(pais)
-                    return
-                case _:
-                    print("Error, debe elegir opción 1, 2 o 3")
-                    continue
+            print("Filtrar por:")
+            print("1. Continente")
+            print("2. Población")
+            print("3. Superficie")
+
+            eleccion = input("Elegí una opción: ").strip()
+
+            if eleccion == "1":
+                continente = input("Continente: ").strip()
+                filtrados = filtrar_continente(
+                    paises_actualizados, continente
+                )
+
+            elif eleccion in ("2", "3"):
+                filtrados = filtrar_rango(
+                    paises_actualizados, eleccion
+                )
+
+            else:
+                print("Opción inválida. Elegí 1, 2 o 3.")
+                continue
+
+            if filtrados is None:
+                return
+
+            if not filtrados:
+                print("No hay países que coincidan con el filtro.")
+                return
+
+            for pais in filtrados:
+                print(pais)
+
+            return
 
     elif opcion == "7":
-        parametro = input("¿Desea ordenar por nombre, población o superficie? ")
-        lista_ordenada = ordenar_paises(paises_actualizados, parametro)
+        if not paises_actualizados:
+            print("No hay países cargados para ordenar.")
+            return
+
+        parametro = input(
+            "Ordenar por nombre, población o superficie: "
+        ).strip()
+
+        lista_ordenada = ordenar_paises(
+            paises_actualizados, parametro
+        )
+
+        if lista_ordenada is None:
+            return
+
         for pais in lista_ordenada:
             print(pais)
 
         return
-        #En caso de querer actualizar el csv con la lista ordenada utilizar el codigo de abajo y eliminar el return de la linea anterior
-        """ paises_actualizados = lista_ordenada
-
-        if lista_ordenada == None:
-            exito, mensaje = False, "Fallo al ordenar la lista."
-        else:
-            exito, mensaje = True, f"Se ha ordenado la lista en base al parametro '{parametro}'" """
     
-    elif opcion == "9":   
-        codigo = input("Código de país (ej: ARG, BRA, PER): ").strip().upper()
-        indicador = input("Indicador Banco Mundial (ej: SP.POP.TOTL): ").strip()
-        if not codigo or not indicador:
-            print("Faltan datos.")
+    elif opcion == "8":
+        if not paises:
+            print("No hay paises cargados para mostrar estadisticas.")
             return
-        datos = consultar_indicador(codigo, indicador)
-        datos = transformar_indicadores(datos)
-        exito, mensaje = preparar_registros_csv(paises_actualizados, datos)
         
+        while True:
+            print("\n=== ESTADÍSTICAS ===")
+            print("1. Cantidad por continente y resumen general")
+            print("2. Estadísticas de un país")
+            print("3. Población: comparación, extremos y promedio")
+            print("4. Superficie por país y promedio")
+            print("5. Volver al menú principal")
+
+            seleccion = input("Elije una opcion: ").strip()
+            
+            if seleccion == "5":
+                return
+            
+            elif seleccion == "1":
+                mostrar_estadisticas_generales(paises)
+            elif seleccion == "2":
+                nombre = input("Nombre del pais: ").strip()
+
+                if not nombre:
+                    print("Error: ingrese el nombre de un pais.")
+                    continue
+                indice = indice_de_pais(paises, nombre)
+
+                if indice == -1:
+                    print(f"No se encontro el pais '{nombre}'.")
+                    continue
+
+                mostrar_estadisticas_pais(paises[indice])
+
+            elif seleccion == "3":
+                mostrar_promedio_poblacion(paises)
+
+            elif seleccion == "4":
+                mostrar_promedio_superficie(paises)
+
+            else:
+                print("Opción inválida. Elegí un número del 1 al 5.")
+  
+    elif opcion == "9":
+        try:
+            recibidos = obtener_paises_api(paises)
+
+            if not recibidos:
+                print("No se recibieron países para integrar.")
+                return
+
+            (
+                paises_actualizados,
+                incorporados,
+                completados
+            ) = preparar_integracion_api(paises, recibidos)
+
+        except (ValueError, KeyError, TypeError) as error:
+            print(f"Error al interpretar los datos de la API: {error}")
+            return
+
+        if incorporados == 0 and completados == 0:
+            print(
+                "No hay países nuevos ni datos adicionales "
+                "faltantes para guardar."
+            )
+            return
+
+        print(f"\nPaíses nuevos: {incorporados}")
+        print(
+            "Países existentes con datos para completar: "
+            f"{completados}"
+        )
+
+        confirmacion = input(
+            "¿Querés guardar esta integración en el CSV? (S/N): "
+        ).strip().lower()
+
+        if confirmacion != "s":
+            print("Integración cancelada.")
+            return
+
+        exito = True
+
+        mensaje = (
+            f"Integración completada: {incorporados} países nuevos "
+            f"y {completados} países existentes completados."
+        )
+
     else:
         raise NotImplementedError(f"Opción {opcion} pendiente de integración")
 
@@ -152,7 +265,7 @@ def ejecutar_opcion(opcion, paises):
         print(mensaje)
     else:
         print("Los cambios no pudieron guardarse. Volvé a intentarlo.")
-    
+
 def main():
     try:
         paises = cargar_paises()

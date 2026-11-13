@@ -9,14 +9,14 @@ def pedir_entero(mensaje, minimo):
             if numero <= minimo:
                 print(f"Error, debe elegir un numero mayor a {minimo}")
                 continue
-            
+
         except ValueError:
             print(f"Error, debe seleccionar un numero entero mayor a 0")
             continue
         return numero
 
-def buscar_pais(paises, texto, exacta=False):
-    """Buscar por nombre, parcial o exacto, ignorando mayúsculas."""
+def buscar_pais(paises, texto):
+    """Buscar por el inicio del nombre, ignorando mayúsculas y acentos."""
     try:
         texto = normalizar_texto(texto)
         if len(texto) <= 0:
@@ -30,7 +30,7 @@ def buscar_pais(paises, texto, exacta=False):
         if not paises_encontrados:
             return None
         return paises_encontrados
-    
+
     except ValueError as e:
         print(e)
         return None
@@ -44,20 +44,20 @@ def filtrar_continente(paises, continente):
     try:
         if continente not in ["africa", "america", "asia", "europa", "oceania"]:
             raise ValueError(f"Continente '{continente}' no válido para filtrar.")
-        
+
         paises_filtrados = []
         for pais in paises:
             if continente == normalizar_texto(pais["continente"]):
                 paises_filtrados.append(pais)
-        
+
         return paises_filtrados
-        
+
     except ValueError as error:
         print(error)
         return None
 
 def filtrar_rango(paises, campo):
-    """campo: 'poblacion' o 'superficie'; validar rango y devolver coincidencias."""
+    """Filtrar por rango: campo='2' para población y '3' para superficie."""
     campo = "poblacion" if campo == "2" else "superficie"
     for pais in paises:
         print(pais["nombre"], pais[campo])
