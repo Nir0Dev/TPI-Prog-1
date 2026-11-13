@@ -10,7 +10,6 @@ Canadá,38950132,9984670,América,CAN,América del Norte,Ottawa,45.4215,-75.6919
 Estados Unidos,333996304,9831510,América,USA,América del Norte,Ciudad de Washington,38.8895,-77.032,2023,
 Cuba,11059820,109880,América,CUB,América Latina y el Caribe ,La Habana,23.1333,-82.3667,2023,
 Alemania,83177813,357600,Europa,DEU,Europa y Asia central,Berlín,52.5235,13.4115,2023,
-Francia,68184457,606410,Europa,FRA,Europa y Asia central,París,48.8566,2.35097,2023,
 España,47786102,505978,Europa,ESP,Europa y Asia central,Madrid,40.4167,-3.70327,2023,
 Italia,59013667,302070,Europa,ITA,Europa y Asia central,Roma,41.8955,12.4823,2023,
 Portugal,10434332,92230,Europa,PRT,Europa y Asia central,Lisboa,38.7072,-9.13552,2023,
@@ -18,14 +17,14 @@ Noruega,5457127,624500,Europa,NOR,Europa y Asia central,Oslo,59.9138,10.7387,202
 Japón,125124989,377969,Asia,JPN,Asia oriental y el Pacífico ,Tokio,35.67,139.77,2023,
 China,1412175000,9562910,Asia,CHN,Asia oriental y el Pacífico ,Pekín,40.0495,116.286,2023,
 India,1425423212,3287260,Asia,IND,Asia meridional,Nueva Delhi,28.6353,77.225,2023,
-Corea del Sur,51672569,100440,Asia,KOR,Asia oriental y el Pacífico ,Seúl,37.5323,126.957,2023,
+Corea del Sur,51672569,100440,Asia,,,,,,,
 Indonesia,278830529,1916907,Asia,IDN,Asia oriental y el Pacífico ,Yakarta,-6.19752,106.83,2023,
-Egipto,112618250,1001450,África,EGY,"Oriente Medio, Norte de África, Afganistán y Pakistán",El Cairo,30.0982,31.2461,2023,
+Egipto,112618250,1001450,África,,,,,,,
 Nigeria,223150896,923770,África,NGA,África al sur del Sahara,Abuja,9.05804,7.48906,2023,
 Sudáfrica,62378410,1219090,África,ZAF,África al sur del Sahara,Ciudad del Cabo,-25.746,28.1871,2023,
-Kenia,54252461,591969,África,KEN,África al sur del Sahara,Nairobi,-1.27975,36.8126,2023,
+Kenia,54252461,591969,África,,,,,,,
 Australia,26018721,7741220,Oceanía,AUS,Asia oriental y el Pacífico ,Canberra,-35.282,149.129,2023,
-Nueva Zelanda,5081700,267710,Oceanía,NZL,Asia oriental y el Pacífico ,Wellington,-41.2865,174.776,2023,
+Nueva Zelanda,5081700,267710,Oceanía,,,,,,,
 Aruba,107359,180,América,ABW,América Latina y el Caribe ,Oranjestad,12.5167,-70.0167,2023,2023
 Afganistán,41454761,652870,Asia,AFG,"Oriente Medio, Norte de África, Afganistán y Pakistán",Kabul,34.5228,69.1761,2023,2023
 Angola,36749906,1246700,África,AGO,África al sur del Sahara,Luanda,-8.81155,13.242,2023,2023
@@ -73,11 +72,13 @@ Dinamarca,5946952,42920,Europa,DNK,Europa y Asia central,Copenhague,55.6763,12.5
 República Dominicana,11331265,146839,América,DOM,América Latina y el Caribe ,Santo Domingo,18.479,-69.8908,2023,2023
 Argelia,46164219,2381740,África,DZA,"Oriente Medio, Norte de África, Afganistán y Pakistán",Argel,36.7397,3.05097,2023,2023
 Ecuador,17980083,256370,América,ECU,América Latina y el Caribe ,Quito,-0.229498,-78.5243,2023,2023
+"Egipto, República Árabe de",114535772,1001450,África,EGY,"Oriente Medio, Norte de África, Afganistán y Pakistán",El Cairo,30.0982,31.2461,2023,2023
 Eritrea,3470390,121630,África,ERI,África al sur del Sahara,Asmara,15.3315,38.9183,2023,2023
 Estonia,1370286,45340,Europa,EST,Europa y Asia central,Tallin,59.4392,24.7586,2023,2023
 Etiopía,128691692,1129819,África,ETH,África al sur del Sahara,Addis Abeba,9.02274,38.7468,2023,2023
 Finlandia,5583911,338480,Europa,FIN,Europa y Asia central,Helsinki,60.1608,24.9525,2023,2023
 Fiji,924145,18270,Oceanía,FJI,Asia oriental y el Pacífico ,Suva,-18.1149,178.399,2023,2023
+Francia,68372286,606410,Europa,FRA,Europa y Asia central,París,48.8566,2.35097,2023,2023
 Islas Feroe,54398,12960,Europa,FRO,Europa y Asia central,Tórshavn,61.8926,-6.91181,2023,2023
 Micronesia (Estados Federados de),112630,701,Oceanía,FSM,Asia oriental y el Pacífico ,Palikir,6.91771,158.185,2023,2023
 Gabón,2484789,267670,África,GAB,África al sur del Sahara,Libreville,0.38832,9.45162,2023,2023
@@ -109,10 +110,12 @@ Israel,9849000,22070,Asia,ISR,"Oriente Medio, Norte de África, Afganistán y Pa
 Jamaica,2839786,10991,América,JAM,América Latina y el Caribe ,Kingston,17.9927,-76.792,2023,2023
 Jordania,11439213,89318,Asia,JOR,"Oriente Medio, Norte de África, Afganistán y Pakistán",Ammán,31.9497,35.9263,2023,2023
 Kazajstán,20330104,2724902,Asia,KAZ,Europa y Asia central,Astaná,51.1879,71.4382,2023,2023
+Kenya,55339003,591969,África,KEN,África al sur del Sahara,Nairobi,-1.27975,36.8126,2023,2023
 Kirguistán,7099750,199950,Asia,KGZ,Europa y Asia central,Biskek,42.8851,74.6057,2023,2023
 Camboya,17423880,181035,Asia,KHM,Asia oriental y el Pacífico ,Phnom Penh,11.5556,104.874,2023,2023
 Kiribati,132530,811,Oceanía,KIR,Asia oriental y el Pacífico ,Tarawa,1.32905,172.979,2023,2023
 Saint Kitts y Nevis,46758,261,América,KNA,América Latina y el Caribe ,Basseterre,17.3,-62.7309,2023,2023
+"Corea, República de",51712619,100450,Asia,KOR,Asia oriental y el Pacífico ,Seúl,37.5323,126.957,2023,2023
 Kuwait,4853420,17820,Asia,KWT,"Oriente Medio, Norte de África, Afganistán y Pakistán",Ciudad de Kuwait,29.3721,47.9824,2023,2023
 República Democrática Popular Lao,7664993,236800,Asia,LAO,Asia oriental y el Pacífico ,Vientián,18.5826,102.177,2023,2023
 Líbano,5773493,10452,Asia,LBN,"Oriente Medio, Norte de África, Afganistán y Pakistán",Beirut,33.8872,35.5134,2023,2023
@@ -152,6 +155,7 @@ Nicaragua,6823613,130370,América,NIC,América Latina y el Caribe ,Managua,12.14
 Países Bajos,17877117,41540,Europa,NLD,Europa y Asia central,Amsterdam,52.3738,4.89095,2023,2023
 Nepal,29694614,147181,Asia,NPL,Asia meridional,Katmandú,27.6939,85.3157,2023,2023
 Naoero,11875,21,Oceanía,NRU,Asia oriental y el Pacífico ,Yaren,-0.5477,166.920867,2023,2023
+Nueva Zelandia,5200000,267710,Oceanía,NZL,Asia oriental y el Pacífico ,Wellington,-41.2865,174.776,2023,2023
 Omán,5049269,309500,Asia,OMN,"Oriente Medio, Norte de África, Afganistán y Pakistán",Mascate,23.6105,58.5874,2023,2023
 Pakistán,247504495,796100,Asia,PAK,"Oriente Medio, Norte de África, Afganistán y Pakistán",Islamabad,30.5167,72.8,2023,2023
 Panamá,4458759,75320,América,PAN,América Latina y el Caribe ,Ciudad de Panamá,8.99427,-79.5188,2023,2023

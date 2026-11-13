@@ -15,8 +15,8 @@ def pedir_entero(mensaje, minimo):
             continue
         return numero
 
-def buscar_pais(paises, texto, exacta=False):
-    """Buscar por nombre, parcial o exacto, ignorando mayúsculas."""
+def buscar_pais(paises, texto):
+    """Buscar por el inicio del nombre, ignorando mayúsculas y acentos."""
     try:
         texto = normalizar_texto(texto)
         if len(texto) <= 0:
@@ -57,7 +57,7 @@ def filtrar_continente(paises, continente):
         return None
 
 def filtrar_rango(paises, campo):
-    """campo: 'poblacion' o 'superficie'; validar rango y devolver coincidencias."""
+    """Filtrar por rango: campo='2' para población y '3' para superficie."""
     campo = "poblacion" if campo == "2" else "superficie"
     for pais in paises:
         print(pais["nombre"], pais[campo])
