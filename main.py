@@ -59,6 +59,17 @@ def ejecutar_opcion(opcion, paises):
         if superficie:
             cambios["superficie"] = superficie
         exito, mensaje = actualizar_pais(paises_actualizados, nombre, cambios)
+    
+    elif opcion == "9":   
+        codigo = input("Código de país (ej: ARG, BRA, PER): ").strip().upper()
+        indicador = input("Indicador Banco Mundial (ej: SP.POP.TOTL): ").strip()
+        if not codigo or not indicador:
+            print("Faltan datos.")
+            return
+        datos = consultar_indicador(codigo, indicador)
+        datos = transformar_indicadores(datos)
+        exito, mensaje = preparar_registros_csv(paises_actualizados, datos)
+        
     else:
         raise NotImplementedError(f"Opción {opcion} pendiente de integración")
 
@@ -70,7 +81,7 @@ def ejecutar_opcion(opcion, paises):
         print(mensaje)
     else:
         print("Los cambios no pudieron guardarse. Volvé a intentarlo.")
-
+    
 def main():
     try:
         paises = cargar_paises()
