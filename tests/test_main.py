@@ -104,12 +104,14 @@ class TestMenuCSV(unittest.TestCase):
         self.assertIn("Error al cargar el CSV", salida.getvalue())
         self.assertEqual(self.ruta.read_text(encoding="utf-8"), original)
 
-    def test_main_opcion_invalida_y_pendiente_permiten_continuar(self):
+    def test_main_opcion_invalida_permite_continuar(self):
+        # No usa ninguna opción de otro integrante: así la prueba sigue valiendo
+        # a medida que se integran las opciones 3 a 9.
         salida = io.StringIO()
-        with patch("builtins.input", side_effect=["x", "5", "0"]), contextlib.redirect_stdout(salida):
+        with patch("builtins.input", side_effect=["x", "99", "0"]), contextlib.redirect_stdout(salida):
             main.main()
-        self.assertIn("Opción inválida", salida.getvalue())
-        self.assertIn("[PENDIENTE]", salida.getvalue())
+        self.assertEqual(salida.getvalue().count("Opción inválida"), 2)
+        self.assertIn("Hasta luego", salida.getvalue())
         self.guardado.assert_not_called()
 
 
