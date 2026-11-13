@@ -16,36 +16,6 @@ URL_SUPERFICIE = "https://api.worldbank.org/v2/country/all/indicator/AG.SRF.TOTL
 URL_CATALOGO = "https://api.worldbank.org/v2/es/country"
 ANIO = "2023"
 
-CODIGOS_CSV = {
-    "Argentina": "ARG",
-    "Brasil": "BRA",
-    "Chile": "CHL",
-    "Uruguay": "URY",
-    "Perú": "PER",
-    "Colombia": "COL",
-    "México": "MEX",
-    "Canadá": "CAN",
-    "Estados Unidos": "USA",
-    "Cuba": "CUB",
-    "Alemania": "DEU",
-    "Francia": "FRA",
-    "España": "ESP",
-    "Italia": "ITA",
-    "Portugal": "PRT",
-    "Noruega": "NOR",
-    "Japón": "JPN",
-    "China": "CHN",
-    "India": "IND",
-    "Corea del Sur": "KOR",
-    "Indonesia": "IDN",
-    "Egipto": "EGY",
-    "Nigeria": "NGA",
-    "Sudáfrica": "ZAF",
-    "Kenia": "KEN",
-    "Australia": "AUS",
-    "Nueva Zelanda": "NZL"
-}
-
 def _descargar_registros(url, nombre, parametros):
     """Descargar todas las páginas y devolver una lista de diccionarios."""
     registros = []
@@ -305,56 +275,23 @@ def normalizar_nombre_pais(nombre):
 
     return resultado
 
-def _eliminar_duplicados(paises_nuevos, paises_existentes, catalogo=None):
-    """Omitir países existentes y repetidos usando códigos o nombres."""
-    if catalogo is None:
-        catalogo = {}
-
-    codigos_por_nombre = {}
-
-    for nombre, codigo in CODIGOS_CSV.items():
-        nombre_normalizado = normalizar_nombre_pais(nombre)
-        codigos_por_nombre[nombre_normalizado] = codigo
-
-    for codigo, pais in catalogo.items():
-        nombre_normalizado = normalizar_nombre_pais(pais["nombre"])
-        codigos_por_nombre[nombre_normalizado] = codigo
-
-    identificadores = set()
-
-    for pais in paises_existentes:
-        nombre = normalizar_nombre_pais(pais.get("nombre"))
-        codigo = str(pais.get("codigo_pais") or "").strip().upper()
-
-        if not codigo:
-            codigo = codigos_por_nombre.get(nombre, "")
-
-        if codigo:
-            identificador = "codigo:" + codigo
-        else:
-            identificador = "nombre:" + nombre
-
-        identificadores.add(identificador)
+def _eliminar_duplicados(paises_nuevos, paises_existentes):
+    """Omitir países existentes y repetidos por nombre normalizado."""
+    nombres = {
+        normalizar_nombre_pais(pais.get("nombre"))
+        for pais in paises_existentes
+    }
 
     nuevos = []
 
     for pais in paises_nuevos:
         nombre = normalizar_nombre_pais(pais.get("nombre"))
-        codigo = str(pais.get("codigo_pais") or "").strip().upper()
 
-        if not codigo:
-            codigo = codigos_por_nombre.get(nombre, "")
-
-        if codigo:
-            identificador = "codigo:" + codigo
-        else:
-            identificador = "nombre:" + nombre
-
-        if identificador in identificadores:
+        if nombre in nombres:
             print(f"Duplicado ignorado: {pais['nombre']}")
             continue
 
-        identificadores.add(identificador)
+        nombres.add(nombre)
         nuevos.append(pais)
 
     return nuevos
@@ -403,8 +340,14 @@ def unir_datos_paises(catalogo, datos_pob, datos_sup):
 
         if errores:
             omitidos += 1
-            continue
 
+            nombre = pais.get("nombre") or "País sin nombre"
+            print(f"País omitido: {nombre}")
+
+            for error in errores:
+                print(f"  - {error}")
+
+            continue
         validos.append(pais_limpio)
 
     if omitidos > 0:
@@ -421,11 +364,6 @@ def preparar_integracion_api(paises_existentes, paises_api):
 
     for pais in paises_existentes:
         preparados.append(pais.copy())
-
-    codigos_por_nombre = {}
-
-    for nombre, codigo in CODIGOS_CSV.items():
-        codigos_por_nombre[normalizar_nombre_pais(nombre)] = codigo
 
     campos_adicionales = (
         "codigo_pais", "region", "capital",
@@ -457,10 +395,6 @@ def preparar_integracion_api(paises_existentes, paises_api):
         if pais_api.get("anio") is not None:
             pais_api["anio_api"] = pais_api["anio"]
 
-        codigo_api = str(
-            pais_api.get("codigo_pais") or ""
-        ).strip().upper()
-
         nombre_api = normalizar_nombre_pais(pais_api["nombre"])
         indice = None
 
@@ -469,21 +403,7 @@ def preparar_integracion_api(paises_existentes, paises_api):
                 pais_local["nombre"]
             )
 
-            codigo_local = str(
-                pais_local.get("codigo_pais") or ""
-            ).strip().upper()
-
-            if not codigo_local:
-                codigo_local = codigos_por_nombre.get(
-                    nombre_local, ""
-                )
-
-            if codigo_api and codigo_local:
-                coincide = codigo_api == codigo_local
-            else:
-                coincide = nombre_api == nombre_local
-
-            if coincide:
+            if nombre_api == nombre_local:
                 indice = posicion
                 break
 
@@ -500,6 +420,18 @@ def preparar_integracion_api(paises_existentes, paises_api):
         pais_local = preparados[indice]
         hubo_cambios = False
 
+        continente_local = normalizar_nombre_pais(
+            pais_local.get("continente")
+        )
+        continente_api = normalizar_nombre_pais(
+            pais_api.get("continente")
+        )
+
+        if continente_local == continente_api:
+            for campo in ("nombre", "continente"):
+                if pais_local.get(campo) != pais_api[campo]:
+                    pais_local[campo] = pais_api[campo]
+                    hubo_cambios = True      
         for campo in campos_adicionales:
             actual = pais_local.get(campo)
             nuevo = pais_api.get(campo)
@@ -557,7 +489,7 @@ def obtener_paises_api(paises_existentes):
 
     validos = unir_datos_paises(catalogo, datos_pob, datos_sup)
 
-    preparados = _eliminar_duplicados(validos, [], catalogo)
+    preparados = _eliminar_duplicados(validos, [])
 
     print(f"Listo: {len(preparados)} países preparados para integrar.")
 
