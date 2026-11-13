@@ -38,7 +38,8 @@ def eliminar_pais(paises, nombre):
     pais_elegido = normalizar_texto(nombre)
 
     for i, pais in enumerate(paises):
-        if pais["nombre"].strip().lower() == pais_elegido:
+        pais_normalizado = normalizar_texto(pais["nombre"])
+        if pais_normalizado == pais_elegido:
             return (paises[:i] + paises[(i + 1):])
 
     print(f"No se encontró el país '{nombre.strip()}'.")
