@@ -9,7 +9,10 @@ from graficos import (
     mostrar_promedio_poblacion,
     mostrar_promedio_superficie
 )
-from api_paises import obtener_paises_api
+from api_paises import (
+    obtener_paises_api,
+    preparar_integracion_api
+)
 
 OPCIONES = {
     "1": "Agregar país",
@@ -151,63 +154,50 @@ def ejecutar_opcion(opcion, paises):
   
     elif opcion == "9":
         try:
-            nuevos = obtener_paises_api(paises)
+            recibidos = obtener_paises_api(paises)
+
+            if not recibidos:
+                print("No se recibieron países para integrar.")
+                return
+
+            (
+                paises_actualizados,
+                incorporados,
+                completados
+            ) = preparar_integracion_api(paises, recibidos)
+
         except (ValueError, KeyError, TypeError) as error:
             print(f"Error al interpretar los datos de la API: {error}")
             return
 
-        if not nuevos:
-            print("No se recibieron países nuevos para incorporar.")
+        if incorporados == 0 and completados == 0:
+            print(
+                "No hay países nuevos ni datos adicionales "
+                "faltantes para guardar."
+            )
             return
 
-        continentes_validos = (
-            "américa", "europa", "asia", "áfrica", "oceanía", "antártida"
+        print(f"\nPaíses nuevos: {incorporados}")
+        print(
+            "Países existentes con datos para completar: "
+            f"{completados}"
         )
 
-        incorporados = 0
-
-        for pais in nuevos:
-            continente = str(pais.get("continente", "")).strip().casefold()
-
-            if continente not in continentes_validos:
-                print(
-                    f"Registro descartado: {pais.get('nombre', 'Sin nombre')}. "
-                    "No tiene un continente válido."
-                )
-                continue
-
-            agregado, aviso = agregar_pais(paises_actualizados, pais)
-
-            if agregado:
-                incorporados += 1
-            else:
-                print(aviso)
-
-        if incorporados == 0:
-            print("No hay países válidos para guardar.")
-            return
-
-        print(f"\nPaíses preparados para incorporar: {incorporados}")
-
-        for pais in paises_actualizados[len(paises):]:
-            print(
-                f"- {pais['nombre']}: "
-                f"{pais['poblacion']} habitantes, "
-                f"{pais['superficie']} km², "
-                f"{pais['continente']}"
-            )
-
         confirmacion = input(
-            "¿Querés incorporar estos países al CSV? (S/N): "
+            "¿Querés guardar esta integración en el CSV? (S/N): "
         ).strip().lower()
 
         if confirmacion != "s":
-            print("Incorporación cancelada.")
+            print("Integración cancelada.")
             return
 
         exito = True
-        mensaje = f"Se incorporaron {incorporados} países desde la API."
-        
+
+        mensaje = (
+            f"Integración completada: {incorporados} países nuevos "
+            f"y {completados} países existentes completados."
+        )
+
     else:
         raise NotImplementedError(f"Opción {opcion} pendiente de integración")
 

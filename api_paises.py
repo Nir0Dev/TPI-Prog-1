@@ -4,7 +4,12 @@
 import requests
 import unicodedata
 from time import sleep
-from gestion_paises import convertir_entero, validar_pais, limpiar_texto
+from gestion_paises import (
+    convertir_entero,
+    validar_pais,
+    limpiar_texto,
+    agregar_pais
+)
 
 URL_POBLACION = "https://api.worldbank.org/v2/country/all/indicator/SP.POP.TOTL"
 URL_SUPERFICIE = "https://api.worldbank.org/v2/country/all/indicator/AG.SRF.TOTL.K2"
@@ -410,6 +415,112 @@ def unir_datos_paises(catalogo, datos_pob, datos_sup):
 
     return validos
 
+def preparar_integracion_api(paises_existentes, paises_api):
+    """Preparar una copia con países nuevos y datos adicionales faltantes."""
+    preparados = []
+
+    for pais in paises_existentes:
+        preparados.append(pais.copy())
+
+    codigos_por_nombre = {}
+
+    for nombre, codigo in CODIGOS_CSV.items():
+        codigos_por_nombre[normalizar_nombre_pais(nombre)] = codigo
+
+    campos_adicionales = (
+        "codigo_pais", "region", "capital",
+        "latitud", "longitud", "anio_api"
+    )
+
+    continentes_validos = (
+        "américa", "europa", "asia",
+        "áfrica", "oceanía", "antártida"
+    )
+
+    incorporados = 0
+    completados = 0
+
+    for recibido in paises_api:
+        pais_api, errores = validar_pais(recibido)
+
+        if errores:
+            print("Registro descartado: " + " ".join(errores))
+            continue
+
+        if pais_api["continente"].casefold() not in continentes_validos:
+            print(
+                f"Registro descartado: continente inválido "
+                f"de {pais_api['nombre']}."
+            )
+            continue
+
+        if pais_api.get("anio") is not None:
+            pais_api["anio_api"] = pais_api["anio"]
+
+        codigo_api = str(
+            pais_api.get("codigo_pais") or ""
+        ).strip().upper()
+
+        nombre_api = normalizar_nombre_pais(pais_api["nombre"])
+        indice = None
+
+        for posicion, pais_local in enumerate(preparados):
+            nombre_local = normalizar_nombre_pais(
+                pais_local["nombre"]
+            )
+
+            codigo_local = str(
+                pais_local.get("codigo_pais") or ""
+            ).strip().upper()
+
+            if not codigo_local:
+                codigo_local = codigos_por_nombre.get(
+                    nombre_local, ""
+                )
+
+            if codigo_api and codigo_local:
+                coincide = codigo_api == codigo_local
+            else:
+                coincide = nombre_api == nombre_local
+
+            if coincide:
+                indice = posicion
+                break
+
+        if indice is None:
+            agregado, aviso = agregar_pais(preparados, pais_api)
+
+            if agregado:
+                incorporados += 1
+            else:
+                print(aviso)
+
+            continue
+
+        pais_local = preparados[indice]
+        hubo_cambios = False
+
+        for campo in campos_adicionales:
+            actual = pais_local.get(campo)
+            nuevo = pais_api.get(campo)
+
+            actual_vacio = (
+                actual is None or str(actual).strip() == ""
+            )
+
+            nuevo_vacio = (
+                nuevo is None or str(nuevo).strip() == ""
+            )
+
+            if actual_vacio and not nuevo_vacio:
+                pais_local[campo] = nuevo
+                hubo_cambios = True
+
+        if hubo_cambios:
+            completados += 1
+
+    return preparados, incorporados, completados
+
 def obtener_paises_api(paises_existentes):
     """Descargar, unir y validar los países antes de incorporarlos."""
     print(f"Descargando datos del Banco Mundial ({ANIO})...")
@@ -446,11 +557,11 @@ def obtener_paises_api(paises_existentes):
 
     validos = unir_datos_paises(catalogo, datos_pob, datos_sup)
 
-    nuevos = _eliminar_duplicados(validos, paises_existentes, catalogo)
+    preparados = _eliminar_duplicados(validos, [], catalogo)
 
-    print(f"Listo: {len(nuevos)} países preparados para incorporar.")
+    print(f"Listo: {len(preparados)} países preparados para integrar.")
 
-    return nuevos
+    return preparados
 
 # --- Prueba con datos simulados, sin internet (para demostrar validaciones) ---
 def probar_validaciones_simuladas():
