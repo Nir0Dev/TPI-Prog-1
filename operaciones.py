@@ -4,7 +4,7 @@ import unicodedata
 def normalizar_texto(texto):
     texto = unicodedata.normalize("NFD", texto)
     texto = "".join(c for c in texto if unicodedata.category(c) != "Mn")
-    texto.strip().lower()
+    texto = texto.strip().lower()
     return texto
 
 
@@ -27,7 +27,8 @@ def ordenar_paises(paises, campo, descendente=False):
                     break
 
         paises_ordenados = sorted(paises, key=lambda x: x[campo], reverse=descendente)
-        return paises_ordenados, campo
+        return paises_ordenados
+    
     except ValueError as error:
         print(error)
         return None
