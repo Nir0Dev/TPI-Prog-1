@@ -59,6 +59,77 @@ def ejecutar_opcion(opcion, paises):
         if superficie:
             cambios["superficie"] = superficie
         exito, mensaje = actualizar_pais(paises_actualizados, nombre, cambios)
+    elif opcion == "3":
+        lista_actualizada = eliminar_pais(paises_actualizados, input("Nombre del país a eliminar: "))
+        if lista_actualizada is None:
+            return
+        print("¿Estás seguro de eliminar el país? (S/N): ", end="")
+        confirmacion = input().strip().lower()
+        if confirmacion == "s":
+            paises_actualizados = lista_actualizada
+            exito, mensaje = True, "País eliminado correctamente."
+        else:
+            exito, mensaje = False, "Eliminación cancelada."
+    elif opcion == "4":
+        lista_vacia = limpiar_paises(paises_actualizados)
+        print("¿Estás seguro de limpiar todos los registros? (S/N): ", end="")
+        confirmacion = input().strip().lower()
+        if confirmacion == "s":
+            paises_actualizados = lista_vacia
+            exito, mensaje = True, "Todos los registros han sido eliminados de la lista."
+        else:
+            exito, mensaje = False, "Limpieza cancelada."
+    elif opcion == "5":
+        print("Ingrese el nombre del país que desea buscar: ", end="")
+        nombre = input()
+        paises_encontrados = buscar_pais(paises_actualizados, nombre)
+
+        if paises_encontrados is not None and len(paises_encontrados) == 1:
+            print(f"Coincidencia encontrada: \n{paises_encontrados[0]}")
+            return
+        elif paises_encontrados is not None and len(paises_encontrados) > 1:
+            print(f"Se encontraron varias coincidencias para {nombre}")
+            for pais in paises_encontrados:
+                print(pais)
+            return
+        else:
+            exito, mensaje = False, print(f"No hay ningún país que coincida con {nombre}")
+    elif opcion == "6":
+        while True:
+            print("Desea filtrar por\n1) Continente\n2) Población\n3) Superficie")
+            eleccion = input().strip()
+            match eleccion:
+                case "1":
+                    print("Seleccione un continente para mostrar la información de sus paises: ", end="")
+                    continente = input()
+                    paises_filtrados = filtrar_continente(paises_actualizados, continente)
+                    print(f"Mostrando la información disponible para los paises de {continente.lower().strip()}")
+                    for pais in paises_filtrados:
+                        print(pais)
+                    return
+                case "2" | "3":
+                    paises_filtrados = filtrar_rango(paises_actualizados, eleccion)
+                    for pais in paises_filtrados:
+                        print(pais)
+                    return
+                case _:
+                    print("Error, debe elegir opción 1, 2 o 3")
+                    continue
+
+    elif opcion == "7":
+        parametro = input("¿Desea ordenar por nombre, población o superficie? ")
+        lista_ordenada = ordenar_paises(paises_actualizados, parametro)
+        for pais in lista_ordenada:
+            print(pais)
+
+        return
+        #En caso de querer actualizar el csv con la lista ordenada utilizar el codigo de abajo y eliminar el return de la linea anterior
+        """ paises_actualizados = lista_ordenada
+
+        if lista_ordenada == None:
+            exito, mensaje = False, "Fallo al ordenar la lista."
+        else:
+            exito, mensaje = True, f"Se ha ordenado la lista en base al parametro '{parametro}'" """
     
     elif opcion == "9":   
         codigo = input("Código de país (ej: ARG, BRA, PER): ").strip().upper()
