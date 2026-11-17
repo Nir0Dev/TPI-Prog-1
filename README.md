@@ -4,6 +4,13 @@ Trabajo Práctico Integrador de Programación 1 de la Tecnicatura Universitaria 
 
 Aplicación de consola en Python que permite administrar países desde un archivo CSV, realizar búsquedas, filtros y ordenamientos, calcular estadísticas y visualizar gráficos con Matplotlib. También permite descargar información del Banco Mundial y confirmar su integración con los datos locales.
 
+## Integrantes
+
+- Cristian Papa
+- Sebastián Julián
+- Bruno Mantovan
+- Nicolás Ontivero
+
 ## Requisitos e instalación
 
 - Python 3.10 o superior (compatible con Matplotlib 3.8).
