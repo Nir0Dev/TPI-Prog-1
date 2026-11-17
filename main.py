@@ -102,6 +102,8 @@ def ejecutar_opcion(opcion, paises):
         for pais in encontrados:
             datos = []
             for campo, valor in pais.items():
+                if campo in ("anio", "anio_api"):
+                    continue
                 etiqueta = campo.replace("_", " ").capitalize()
                 datos.append(f"{etiqueta}: {valor}")
             print(" | ".join(datos))
