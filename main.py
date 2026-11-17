@@ -1,7 +1,7 @@
 """Menú principal compartido. Cada integrante integra su opción mediante PR."""
 from gestion_paises import cargar_paises, agregar_pais, actualizar_pais, guardar_paises, indice_de_pais
 from consultas import buscar_pais, filtrar_continente, filtrar_rango
-from operaciones import eliminar_pais, limpiar_paises, ordenar_paises
+from operaciones import eliminar_pais, limpiar_paises, ordenar_paises, normalizar_texto
 from graficos import (
     mostrar_estadisticas_pais,
     mostrar_estadisticas_generales,
@@ -100,7 +100,13 @@ def ejecutar_opcion(opcion, paises):
         print(f"Coincidencias encontradas: {len(encontrados)}")
 
         for pais in encontrados:
-            print(pais)
+            datos = []
+            for campo, valor in pais.items():
+                if campo in ("anio", "anio_api"):
+                    continue
+                etiqueta = campo.replace("_", " ").capitalize()
+                datos.append(f"{etiqueta}: {valor}")
+            print(" | ".join(datos))
 
         return
 
@@ -118,6 +124,11 @@ def ejecutar_opcion(opcion, paises):
             eleccion = input("Elegí una opción: ").strip()
 
             if eleccion == "1":
+                continentes = []
+                for pais in paises_actualizados:
+                    if pais["continente"] not in continentes:
+                        continentes.append(pais["continente"])
+                print("Continentes disponibles: " + ", ".join(continentes))
                 continente = input("Continente: ").strip()
                 filtrados = filtrar_continente(
                     paises_actualizados, continente
@@ -140,7 +151,12 @@ def ejecutar_opcion(opcion, paises):
                 return
 
             for pais in filtrados:
-                print(pais)
+                if eleccion == "1":
+                    print(pais["nombre"])
+                elif eleccion == "2":
+                    print(f"Nombre: {pais['nombre']} | Población: {pais['poblacion']}")
+                else:
+                    print(f"Nombre: {pais['nombre']} | Superficie: {pais['superficie']} km²")
 
             return
 
@@ -152,6 +168,7 @@ def ejecutar_opcion(opcion, paises):
         parametro = input(
             "Ordenar por nombre, población o superficie: "
         ).strip()
+        parametro = normalizar_texto(parametro)
 
         lista_ordenada = ordenar_paises(
             paises_actualizados, parametro
@@ -161,9 +178,24 @@ def ejecutar_opcion(opcion, paises):
             return
 
         for pais in lista_ordenada:
-            print(pais)
+            if parametro == "nombre":
+                print(pais["nombre"])
+            elif parametro == "poblacion":
+                print(f"Nombre: {pais['nombre']} | Población: {pais['poblacion']}")
+            else:
+                print(f"Nombre: {pais['nombre']} | Superficie: {pais['superficie']} km²")
 
-        return
+        confirmacion = input(
+            "¿Querés guardar este orden en el CSV? (S/N): "
+        ).strip().lower()
+
+        if confirmacion != "s":
+            print("Orden mostrado sin guardar.")
+            return
+
+        paises_actualizados = lista_ordenada
+        exito = True
+        mensaje = "Orden guardado correctamente."
     
     elif opcion == "8":
         if not paises:

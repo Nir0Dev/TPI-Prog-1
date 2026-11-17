@@ -40,7 +40,7 @@ def mostrar_estadisticas_pais(pais, historia=None):
         for campo, valor in datos.items():
             if campo in (
                 "nombre", "poblacion", "superficie",
-                "continente", "densidad", "anio"
+                "continente", "densidad", "anio", "anio_api"
             ):
                 continue
 

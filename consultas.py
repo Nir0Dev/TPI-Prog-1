@@ -59,9 +59,7 @@ def filtrar_continente(paises, continente):
 def filtrar_rango(paises, campo):
     """Filtrar por rango: campo='2' para población y '3' para superficie."""
     campo = "poblacion" if campo == "2" else "superficie"
-    for pais in paises:
-        print(pais["nombre"], pais[campo])
-    print(f"Debe elejir un rango en de {campo} para filtrar: ")
+    print(f"Ingrese el rango de {campo} para filtrar:")
     rango_inf = pedir_entero(f"Seleccione un mínimo para el rango de {campo}", 0)
     rango_sup = pedir_entero(f"Seleccione un máximo para el rango de {campo}", (rango_inf))
 
