@@ -161,16 +161,6 @@ El botón Volver cierra la figura y regresa al submenú.
 
 `main.py` conecta las funciones con el menú. La integración entre módulos se trabajó mediante ramas y revisiones del equipo.
 
-## Pruebas
-
-Para ejecutar las pruebas incluidas en el repositorio:
-
-```bash
-python -m unittest discover -s tests -v
-```
-
-Las pruebas de archivos trabajan con datos temporales. Los resultados de ejecución de pruebas no forman parte del dataset.
-
 ## Documentación y video de entrega
 
 - **Repositorio:** https://github.com/Nir0Dev/TPI-Prog-1
