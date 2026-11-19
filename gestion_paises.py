@@ -1,14 +1,4 @@
-"""Integrante 1 — CSV, persistencia y validaciones.
-
-Este módulo es el ÚNICO del proyecto que lee y escribe data/paises.csv.
-Los países se manejan como una lista de diccionarios, por ejemplo:
-
-    {"nombre": "Japón", "poblacion": 125124989, "superficie": 377969, "continente": "Asia"}
-
-Además de las cuatro columnas obligatorias, un país puede traer columnas extra
-(por ejemplo, las que agregue la API del integrante 4). Esas columnas se
-conservan al cargar, actualizar y guardar.
-"""
+"""Integrante 1 — Lectura, validación y guardado del CSV (único módulo que lo escribe)."""
 import csv
 import io
 from pathlib import Path
@@ -18,30 +8,22 @@ COLUMNAS_OBLIGATORIAS = ("nombre", "poblacion", "superficie", "continente")
 CAMPOS_TEXTO = ("nombre", "continente")
 CAMPOS_NUMERICOS = ("poblacion", "superficie")
 
-# Topes para rechazar valores absurdos (por ejemplo, 10 elevado a la 400).
-# Ningún país puede tener más habitantes que el mundo entero (unos 8.200 millones)
-# ni más superficie que toda la tierra firme del planeta (unos 149 millones de km²).
-POBLACION_MAXIMA = 10_000_000_000  # 10.000 millones de habitantes
-SUPERFICIE_MAXIMA = 150_000_000    # 150 millones de km²
+# Topes: más que la población del mundo y más que la tierra firme del planeta
+POBLACION_MAXIMA = 10_000_000_000
+SUPERFICIE_MAXIMA = 150_000_000
 
 
-# ---------------------------------------------------------------------------
-# Funciones auxiliares
-# ---------------------------------------------------------------------------
+# --- Funciones auxiliares ---
 def limpiar_texto(valor):
-    """Pasar a texto, sacar espacios de los extremos y dejar uno solo entre palabras."""
+    """Sacar espacios de más."""
     if valor is None:
         return ""
     return " ".join(str(valor).split())
 
 
 def convertir_entero(valor):
-    """Convertir un valor a int. Devuelve None si no representa un número entero.
-
-    Acepta "45376763", 45376763 y también "2780400.0" o 2780400.0 (la API del
-    Banco Mundial a veces entrega números con decimales en cero).
-    """
-    if isinstance(valor, bool):  # True/False no son datos válidos
+    """Convertir a int; devuelve None si no es un entero."""
+    if isinstance(valor, bool):
         return None
     texto = limpiar_texto(valor)
     try:
@@ -58,23 +40,19 @@ def convertir_entero(valor):
 
 
 def formatear_numero(numero):
-    """Escribir un entero con puntos de miles, como en Argentina: 10.000.000.000."""
+    """10000000000 -> 10.000.000.000"""
     return f"{numero:,}".replace(",", ".")
 
 
 def resumir(texto, largo=30):
-    """Acortar textos muy largos para que los mensajes de error se puedan leer."""
+    """Acortar textos largos en los mensajes."""
     if len(texto) <= largo:
         return texto
     return texto[:largo] + "…"
 
 
 def indice_de_pais(paises, nombre):
-    """Devolver la posición del país en la lista, o -1 si no está.
-
-    Compara sin importar mayúsculas ni espacios de más: "  ARGENTINA " encuentra
-    a "Argentina".
-    """
+    """Posición del país en la lista (sin importar mayúsculas), o -1 si no está."""
     buscado = limpiar_texto(nombre).casefold()
     for indice, pais in enumerate(paises):
         if limpiar_texto(pais.get("nombre")).casefold() == buscado:
@@ -83,11 +61,7 @@ def indice_de_pais(paises, nombre):
 
 
 def leer_texto_csv(ruta):
-    """Leer el archivo completo como texto.
-
-    Primero prueba UTF-8 (con o sin BOM, como lo guarda Excel en "CSV UTF-8").
-    Si falla, usa cp1252, que es como Excel en Windows guarda el "CSV" común.
-    """
+    """Leer el archivo en UTF-8 o, si falla, en cp1252 (Excel)."""
     try:
         return ruta.read_text(encoding="utf-8-sig")
     except UnicodeDecodeError:
@@ -95,21 +69,16 @@ def leer_texto_csv(ruta):
 
 
 def detectar_separador(texto):
-    """Excel en español separa con ';'. Si el encabezado tiene más ';' que ',', usar ';'."""
+    """Usar ';' si el encabezado lo tiene (Excel en español) o ',' si no."""
     primera_linea = texto.split("\n", 1)[0]
     if primera_linea.count(";") > primera_linea.count(","):
         return ";"
     return ","
 
 
-# ---------------------------------------------------------------------------
-# Funciones principales
-# ---------------------------------------------------------------------------
+# --- Funciones principales ---
 def crear_plantilla(ruta=RUTA_CSV):
-    """Crear carpeta y CSV con encabezados si falta; NO sobrescribir datos existentes.
-
-    Devuelve True si creó la plantilla y False si el archivo ya tenía contenido.
-    """
+    """Crear el CSV con el encabezado si no existe o está vacío."""
     ruta = Path(ruta)
     if ruta.exists() and ruta.stat().st_size > 0:
         return False
@@ -120,18 +89,8 @@ def crear_plantilla(ruta=RUTA_CSV):
 
 
 def validar_pais(pais):
-    """Revisar un país y devolver una versión "limpia".
-
-    Reglas: nombre y continente no vacíos y con letras; población entera entre
-    0 y POBLACION_MAXIMA; superficie entera mayor a 0 y hasta SUPERFICIE_MAXIMA.
-
-    Devuelve una tupla (pais_limpio, errores):
-      - pais_limpio: copia del diccionario con textos limpios y números como int
-        (las columnas extra se conservan).
-      - errores: lista de mensajes. Si está vacía, el país es válido.
-    No modifica el diccionario recibido.
-    """
-    limpio = dict(pais)  # copia: así no se toca el original
+    """Devolver (copia limpia del país, lista de errores). Sin errores = válido."""
+    limpio = dict(pais)  # copia para no tocar el original
     errores = []
 
     for campo in CAMPOS_TEXTO:
@@ -166,23 +125,15 @@ def validar_pais(pais):
 
 
 def cargar_paises(ruta=RUTA_CSV):
-    """Leer el CSV y devolver una lista de diccionarios con los países válidos.
-
-    - Si el archivo no existe, crea la plantilla con encabezados y devuelve [].
-    - Si faltan columnas obligatorias, lanza ValueError (main avisa y termina,
-      para no guardar encima de un archivo que no entendemos).
-    - Las filas con errores o repetidas se descartan, avisando en pantalla el
-      número de línea y el motivo, y que al guardar se van a quitar del CSV.
-    """
+    """Leer el CSV y devolver la lista de países válidos; avisa las filas descartadas."""
     ruta = Path(ruta)
     crear_plantilla(ruta)
 
     texto = leer_texto_csv(ruta)
     lector = csv.DictReader(io.StringIO(texto), delimiter=detectar_separador(texto))
-    if lector.fieldnames is None:  # archivo vacío, sin encabezado
+    if lector.fieldnames is None:  # archivo vacío
         return []
 
-    # " Nombre" o "NOMBRE" en el encabezado cuentan como "nombre"
     lector.fieldnames = [limpiar_texto(columna).lower() for columna in lector.fieldnames]
     faltantes = [columna for columna in COLUMNAS_OBLIGATORIAS if columna not in lector.fieldnames]
     if faltantes:
@@ -192,11 +143,10 @@ def cargar_paises(ruta=RUTA_CSV):
         )
 
     paises = []
-    descartadas = 0
     for fila in lector:
         motivo = ""
         pais, errores = validar_pais(fila)
-        if None in fila:  # DictReader guarda en la clave None los valores sobrantes
+        if None in fila:  # la fila tiene valores de más
             motivo = "tiene más valores que columnas."
         elif errores:
             motivo = " ".join(errores)
@@ -204,49 +154,27 @@ def cargar_paises(ruta=RUTA_CSV):
             motivo = f"'{pais['nombre']}' está repetido."
 
         if motivo:
-            descartadas += 1
             print(f"Aviso: línea {lector.line_num} descartada: {motivo}")
         else:
             paises.append(pais)
 
-    if descartadas > 0:
-        print(f"Atención: {descartadas} fila(s) no se cargaron. Si guardás cambios, se van a "
-              "quitar del CSV; si las necesitás, corregilas en el archivo antes.")
     return paises
 
 
 def agregar_pais(paises, pais):
-    """Agregar un país nuevo a la lista (NO guarda el CSV; eso lo hace main).
-
-    Recibe un diccionario con nombre, poblacion, superficie y continente
-    (los números pueden venir como texto, tal cual los escribe el usuario).
-    Devuelve una tupla (exito, mensaje):
-      - (False, "<errores>") si validar_pais encuentra errores.
-      - (False, "<aviso>") si ya existe un país con ese nombre.
-      - (True, "<confirmación>") si lo agregó a la lista.
-    """
+    """Validar y agregar un país nuevo. Devuelve (exito, mensaje)."""
     pais_limpio, errores = validar_pais(pais)
     if errores:
         return False, " ".join(errores)
     indice = indice_de_pais(paises, pais_limpio["nombre"])
     if indice != -1:
-        # Mostrar el nombre como está guardado, no como lo escribió el usuario
         return False, f"Ya existe un país con el nombre '{paises[indice]['nombre']}'."
     paises.append(pais_limpio)
     return True, f"País '{pais_limpio['nombre']}' agregado correctamente."
 
 
 def actualizar_pais(paises, nombre, cambios):
-    """Actualizar población y/o superficie de un país existente (NO guarda el CSV).
-
-    cambios es un diccionario con "poblacion", "superficie" o ambas, por ejemplo
-    {"poblacion": "46000000"}. Las columnas extra del país se conservan.
-    Devuelve una tupla (exito, mensaje):
-      - (False, ...) si el país no existe, si cambios está vacío o trae otros
-        campos, o si los valores nuevos no pasan validar_pais. En esos casos el
-        país queda como estaba.
-      - (True, ...) si lo actualizó.
-    """
+    """Cambiar población y/o superficie de un país. Devuelve (exito, mensaje)."""
     indice = indice_de_pais(paises, nombre)
     if indice == -1:
         return False, f"No se encontró el país '{limpiar_texto(nombre)}'."
@@ -255,7 +183,7 @@ def actualizar_pais(paises, nombre, cambios):
     if any(campo not in CAMPOS_NUMERICOS for campo in cambios):
         return False, "Solo se pueden actualizar población y superficie."
 
-    actualizado = paises[indice].copy()
+    actualizado = paises[indice].copy()  # se valida la copia antes de reemplazar
     actualizado.update(cambios)
     pais_limpio, errores = validar_pais(actualizado)
     if errores:
@@ -265,13 +193,7 @@ def actualizar_pais(paises, nombre, cambios):
 
 
 def guardar_paises(paises, ruta=RUTA_CSV):
-    """Guardar la lista en el CSV; mantener columnas mínimas y extras de la API.
-
-    Escribe primero en un archivo temporal y después lo renombra: si algo falla
-    a mitad de camino, el CSV original queda intacto.
-    Devuelve True si guardó y False si no pudo (por ejemplo, porque el archivo
-    está abierto en Excel), mostrando el motivo.
-    """
+    """Guardar la lista en el CSV (con las columnas extra). Devuelve True si pudo."""
     ruta = Path(ruta)
     columnas = list(COLUMNAS_OBLIGATORIAS)
     for pais in paises:
@@ -279,7 +201,7 @@ def guardar_paises(paises, ruta=RUTA_CSV):
             if isinstance(clave, str) and clave not in columnas:
                 columnas.append(clave)
 
-    temporal = ruta.with_name(ruta.name + ".tmp")
+    temporal = ruta.with_name(ruta.name + ".tmp")  # si falla, el original no se rompe
     try:
         ruta.parent.mkdir(parents=True, exist_ok=True)
         with open(temporal, "w", encoding="utf-8", newline="") as archivo:
@@ -288,7 +210,7 @@ def guardar_paises(paises, ruta=RUTA_CSV):
             escritor.writerows(paises)
         temporal.replace(ruta)
     except OSError as error:
-        if temporal.is_file():  # borrar el temporal a medio escribir, si quedó
+        if temporal.is_file():
             temporal.unlink()
         print(f"Error: no se pudo guardar {ruta.name}: {error}")
         return False
