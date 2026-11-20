@@ -166,6 +166,6 @@ El botón Volver cierra la figura y regresa al submenú.
 - **Repositorio:** https://github.com/Nir0Dev/TPI-Prog-1
 - **Informe de trabajo editable:** https://docs.google.com/document/d/1z5xGx5NavVmho__BVpo4ETUs22piHVO2/edit
 - **Documentación final en PDF:** [Consultar informe](https://drive.google.com/file/d/1oUrT9A2Sw1B_fDn4N2oc_g1jzg3J83GJ/view?usp=drive_link)
-- **Video demostrativo:** [Ver video en Google Drive](https://drive.google.com/file/d/1_jNYUI9NxxlLLzS_mc4by3wQjSQT9NaJ/view?usp=sharing)
+- **Video demostrativo:** [Ver video en Google Drive](https://drive.google.com/file/d/19v9VmsvB5dQwB-g6Aq-J_9BMyNJyK5eD/view?usp=sharing)
 
 Según la consigna, la entrega final se presenta en un archivo `.zip` que incluye el código fuente completo y la documentación en PDF. El repositorio debe incluir el dataset CSV y este README con los enlaces obligatorios completos antes de entregar.
